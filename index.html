@@ -186,7 +186,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     margin-bottom: 12px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
@@ -205,6 +205,9 @@
       border-bottom: 1px solid var(--border-strong);
     }
     .main-content { padding: 12px; }
+    /* Sur petit écran, on autorise à nouveau le retour à la ligne pour éviter le débordement horizontal */
+    .main-toolbar, .server-bar, .view-tabs { flex-wrap: wrap; }
+    .view-tabs { margin-left: 0; }
   }
 
   .backup-status {
@@ -414,7 +417,7 @@
   }
   /* Server bar — now compact "pills" inline with the view tabs */
   .server-bar {
-    display: flex; gap: 4px; flex-wrap: wrap;
+    display: flex; gap: 4px; flex-wrap: nowrap;
     align-items: center;
     margin: 0;
   }
@@ -449,7 +452,8 @@
   .view-tabs {
     display: flex; gap: 2px;
     margin: 0 0 0 auto;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
   }
   .view-tab {
     padding: 6px 14px;
