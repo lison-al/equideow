@@ -248,6 +248,39 @@
     padding: 4px 4px 0; cursor: pointer; user-select: none;
   }
   .cloud-viewer-toggle input { cursor: pointer; }
+
+  /* Indicateurs condensés (icônes + infobulle) */
+  .status-bar { display: flex; align-items: center; gap: 6px; }
+  .status-icon {
+    font-size: 14px; line-height: 1;
+    padding: 4px 6px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: default; user-select: none;
+  }
+  .status-icon.ok     { box-shadow: inset 0 0 0 2px var(--success); }
+  .status-icon.warn   { box-shadow: inset 0 0 0 2px var(--warning); }
+  .status-icon.danger { box-shadow: inset 0 0 0 2px var(--danger); }
+  .status-icon.new    { box-shadow: inset 0 0 0 2px var(--gold); cursor: pointer; }
+  .status-icon.off    { opacity: 0.5; }
+  .status-sync { flex: 0 0 auto; width: 28px; }
+  .status-auto {
+    font-size: 11px; color: var(--text-muted);
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: pointer; user-select: none; margin-left: auto;
+  }
+  .status-auto input { cursor: pointer; }
+
+  /* Barre de recherche fixe en haut du contenu principal */
+  .top-search-bar {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg);
+    padding: 8px 0 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-search-bar .global-search-container { max-width: 460px; }
   .global-search-container {
     position: relative;
   }
@@ -1131,21 +1164,13 @@
       </div>
     </div>
 
-    <div class="sidebar-backup">
-      <span id="backupStatus" class="backup-status"></span>
-    </div>
-
-    <div class="sidebar-cloud">
-      <span id="cloudStatus" class="cloud-status off" title="État de la synchronisation cloud (lecture du Gist)">☁ …</span>
-      <button class="icon-btn cloud-sync-btn" id="cloudSyncBtn" title="Synchroniser maintenant">↻</button>
-    </div>
-    <label class="cloud-viewer-toggle" title="Sur cet appareil, charger automatiquement les données du cloud. À activer sur le téléphone, à laisser décoché sur le PC.">
-      <input type="checkbox" id="cloudViewerToggle"> Afficher auto (cloud)
-    </label>
-
-    <div class="global-search-container">
-      <input type="text" id="globalSearch" class="global-search-input" placeholder="🔍 Rechercher (Ctrl+K)…" autocomplete="off">
-      <div class="global-search-results" id="globalSearchResults" hidden></div>
+    <div class="status-bar">
+      <span id="backupStatus" class="status-icon" title="Sauvegarde">💾</span>
+      <span id="cloudStatus" class="status-icon off" title="Cloud">☁</span>
+      <button class="icon-btn cloud-sync-btn status-sync" id="cloudSyncBtn" title="Synchroniser le cloud maintenant">↻</button>
+      <label class="status-auto" title="Charger automatiquement les données du cloud sur cet appareil. À activer sur le téléphone, à laisser décoché sur le PC.">
+        <input type="checkbox" id="cloudViewerToggle"> auto
+      </label>
     </div>
 
     <div class="sidebar-section-label">Mes comptes</div>
@@ -1153,6 +1178,12 @@
   </aside>
 
   <main class="main-content">
+    <div class="top-search-bar">
+      <div class="global-search-container">
+        <input type="text" id="globalSearch" class="global-search-input" placeholder="🔍 Rechercher un objet dans tous les comptes (Ctrl+K)…" autocomplete="off">
+        <div class="global-search-results" id="globalSearchResults" hidden></div>
+      </div>
+    </div>
     <div class="main-toolbar">
       <div class="server-bar" id="serverBar"></div>
       <div class="view-tabs" id="viewTabs">
@@ -1790,8 +1821,9 @@
   function setCloudStatus(text, cls, action) {
     const el = document.getElementById('cloudStatus');
     if (!el) return;
-    el.textContent = text;
-    el.className = 'cloud-status' + (cls ? ' ' + cls : '');
+    el.textContent = '☁';
+    el.className = 'status-icon ' + (cls || 'off');
+    el.title = 'Cloud : ' + String(text || '').replace(/^☁\s*/, '');
     el.dataset.action = action || '';
   }
 
@@ -2243,30 +2275,17 @@
     const changes = meta.changesSinceBackup || 0;
     const snoozed = isBackupSnoozed();
 
-    if (changes === 0 && days !== null && days < 2) {
-      el.className = 'backup-status';
-      el.textContent = '✓ Sauvegardé';
-    } else if (changes > 0 && (days === null || days >= DAYS_BEFORE_BACKUP_REMINDER)) {
-      el.className = 'backup-status danger';
-      el.textContent = '⚠ Non sauvegardé (' + changes + ' modifs)';
-    } else if (changes > 0) {
-      el.className = 'backup-status warn';
-      el.textContent = changes + ' modifs depuis sauvegarde';
-    } else if (days !== null) {
-      el.className = 'backup-status';
-      el.textContent = '✓ Sauvegardé il y a ' + days + ' j';
-    } else {
-      el.className = 'backup-status warn';
-      el.textContent = '⚠ Jamais sauvegardé';
-    }
+    let cls, msg;
+    if (changes === 0 && days !== null && days < 2) { cls = 'ok'; msg = 'Sauvegardé'; }
+    else if (changes > 0 && (days === null || days >= DAYS_BEFORE_BACKUP_REMINDER)) { cls = 'danger'; msg = 'Non sauvegardé (' + changes + ' modifs)'; }
+    else if (changes > 0) { cls = 'warn'; msg = changes + ' modifs depuis la dernière sauvegarde'; }
+    else if (days !== null) { cls = 'ok'; msg = 'Sauvegardé il y a ' + days + ' j'; }
+    else { cls = 'warn'; msg = 'Jamais sauvegardé'; }
+    if (snoozed) msg += ' · rappels en pause';
 
-    // Append a small "snoozed" indicator if reminders are paused
-    if (snoozed) {
-      el.textContent += ' · 😴 rappels en pause';
-      el.title = 'Les rappels automatiques sont désactivés jusqu\'à demain matin. Tu peux toujours sauvegarder manuellement.';
-    } else {
-      el.title = '';
-    }
+    el.className = 'status-icon ' + cls;
+    el.textContent = '💾';
+    el.title = 'Sauvegarde : ' + msg;
   }
 
   function countRemindersForServerData(sd) {
