@@ -2239,17 +2239,13 @@
   }
 
   function processWeeklyResets() {
-    const currentWeek = getCurrentWeekKey();
+    // Les échanges restants sont désormais sans maximum (et alimentés par le scraping) :
+    // plus de remise à zéro hebdomadaire automatique. On s'assure juste que le champ existe.
     let changed = false;
     state.accounts.forEach(acc => {
       SERVERS.forEach(s => {
         const sd = acc.servers[s];
-        if (!sd.exchanges) { sd.exchanges = makeDefaultExchanges(); changed = true; return; }
-        if (sd.exchanges.lastResetWeekKey !== currentWeek) {
-          sd.exchanges.count = 0;
-          sd.exchanges.lastResetWeekKey = currentWeek;
-          changed = true;
-        }
+        if (!sd.exchanges) { sd.exchanges = makeDefaultExchanges(); changed = true; }
       });
     });
     if (changed) saveState();
@@ -2739,12 +2735,12 @@
 
         <div class="exchanges-card">
           <div class="exchanges-info">
-            <span class="exchanges-label">🔄 Échanges</span>
+            <span class="exchanges-label">🔄 Échanges restants</span>
             <span class="exchanges-reset-info" id="exchangesResetInfo">${formatResetInfo()}</span>
           </div>
           <div class="exchanges-controls">
             <button class="exchanges-btn" id="exchangesDecBtn" aria-label="Retirer un échange">−</button>
-            <span class="exchanges-value" id="exchangesValue">${sd.exchanges.count}/${EXCHANGES_MAX}</span>
+            <span class="exchanges-value" id="exchangesValue">${sd.exchanges.count}</span>
             <button class="exchanges-btn" id="exchangesIncBtn" aria-label="Ajouter un échange">+</button>
           </div>
         </div>
@@ -3136,19 +3132,18 @@
     const incBtn = document.getElementById('exchangesIncBtn');
     if (!valueEl) return;
     const count = sd.exchanges.count;
-    valueEl.textContent = count + '/' + EXCHANGES_MAX;
-    valueEl.classList.toggle('maxed', count >= EXCHANGES_MAX);
+    valueEl.textContent = count;
+    valueEl.classList.remove('maxed');
     valueEl.classList.toggle('empty', count === 0);
     if (decBtn) decBtn.disabled = count <= 0;
-    if (incBtn) incBtn.disabled = count >= EXCHANGES_MAX;
+    if (incBtn) incBtn.disabled = false; // pas de maximum
   }
 
   function changeExchanges(delta) {
     const sd = getActiveServerData();
     if (!sd) return;
     if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
-    processWeeklyResets();
-    const newCount = Math.max(0, Math.min(EXCHANGES_MAX, sd.exchanges.count + delta));
+    const newCount = Math.max(0, sd.exchanges.count + delta); // pas de plafond
     if (newCount === sd.exchanges.count) return;
     sd.exchanges.count = newCount;
     recordChange();
