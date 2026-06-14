@@ -1,0 +1,4215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equideow - Gestionnaire de comptes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     EQUIDEOW-INSPIRED THEME
+     Light: Parchemin chaud (warm parchment, ancient grimoire)
+     Dark: Charbon & or (sober charcoal with golden accents)
+     ============================================================ */
+  :root {
+    /* Typography */
+    --font-display: 'Cinzel Decorative', 'Cinzel', Georgia, serif;  /* large titles */
+    --font-title: 'Cormorant SC', Georgia, serif;                   /* panel titles, labels */
+    --font-body: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+
+    /* Light theme: Parchemin chaud */
+    --bg: #f5efd9;              /* warm parchment background */
+    --bg-pattern: #ebe4c4;      /* slightly darker for depth */
+    --surface: #fffaeb;         /* lighter parchment for cards */
+    --surface-2: #ebe4c4;       /* secondary surface */
+    --surface-3: #ddd4a8;       /* tertiary, for hover states */
+    --text: #3a2f10;            /* deep warm brown for body text */
+    --text-muted: #6b5a2e;      /* faded warm brown */
+    --text-light: #9b8c5e;      /* very faded */
+    --text-title: #5d4e1a;      /* deep gold-brown for section titles */
+    --text-highlight: #8b2a1f;  /* brick red for item names (like the game) */
+    --border: rgba(93, 78, 26, 0.25);
+    --border-strong: rgba(93, 78, 26, 0.45);
+    --accent: #8b6f1a;          /* darker gold accent for buttons */
+    --accent-bg: #f0e4b0;
+    --accent-strong: #5d4e1a;
+    --warning: #8a5a08;         /* warm amber */
+    --warning-bg: #f5e0a8;
+    --danger: #8b2a1f;          /* brick red */
+    --danger-bg: #f0c5b5;
+    --success: #4a6817;         /* meadow green */
+    --success-bg: #d8e0a0;
+    --gold: #b8860b;            /* rich gold accent */
+    --gold-bg: #f0dc94;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --shadow-soft: 0 2px 4px rgba(93, 78, 26, 0.08);
+    --shadow-strong: 0 4px 12px rgba(93, 78, 26, 0.18);
+  }
+
+  [data-theme="dark"] {
+    /* Dark theme: Charbon & or */
+    --bg: #1a1815;              /* deep charcoal */
+    --bg-pattern: #221f1a;
+    --surface: #28251f;         /* charcoal surface for cards */
+    --surface-2: #322e26;       /* secondary surface */
+    --surface-3: #3f3a30;       /* hover */
+    --text: #e8d8a8;            /* warm cream */
+    --text-muted: #b5a878;
+    --text-light: #908068;
+    --text-title: #e8d8a8;      /* warm gold-cream for titles */
+    --text-highlight: #d8a878;  /* soft warm gold for items (replaces brick) */
+    --border: rgba(232, 216, 168, 0.18);
+    --border-strong: rgba(232, 216, 168, 0.35);
+    --accent: #c4a050;          /* rich antique gold */
+    --accent-bg: #3a3525;
+    --accent-strong: #d8b870;
+    --warning: #d8a850;
+    --warning-bg: #3a2c08;
+    --danger: #d88068;
+    --danger-bg: #4a2218;
+    --success: #a8b870;
+    --success-bg: #2e3518;
+    --gold: #d8b557;
+    --gold-bg: #3a2f10;
+    --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-strong: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    /* Subtle parchment texture using overlaid gradient */
+    background-image:
+      radial-gradient(at 20% 30%, var(--bg-pattern) 0%, transparent 60%),
+      radial-gradient(at 80% 70%, var(--bg-pattern) 0%, transparent 50%);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  /* ============================================================
+     LAYOUT: sidebar + main content
+     ============================================================ */
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+  }
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border-strong);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-soft);
+  }
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .sidebar-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 15%; right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.6;
+  }
+  .sidebar-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-title);
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 0 var(--surface);
+    white-space: nowrap;
+  }
+  .sidebar-actions {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    font-family: inherit;
+    transition: all 0.15s;
+    min-width: 26px;
+    text-align: center;
+  }
+  .icon-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  .sidebar-backup {
+    display: flex;
+    justify-content: center;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 20px 20px;
+    overflow-x: hidden;
+  }
+  .main-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ============================================================
+     RESPONSIVE: sidebar wraps to top on narrow viewports
+     ============================================================ */
+  @media (max-width: 720px) {
+    .app-layout { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      border-right: none;
+      border-bottom: 1px solid var(--border-strong);
+    }
+    .main-content { padding: 12px; }
+  }
+
+  .backup-status {
+    font-size: 11px; padding: 3px 8px;
+    border-radius: var(--radius);
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success);
+    display: inline-flex; align-items: center; gap: 4px;
+    font-weight: 600;
+    width: 100%;
+    justify-content: center;
+  }
+  .backup-status.warn { background: var(--warning-bg); color: var(--warning); border-color: var(--warning); }
+  .backup-status.danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
+  .sidebar-cloud { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+  .cloud-status {
+    flex: 1; min-width: 0;
+    font-size: 11px; padding: 3px 8px;
+    border-radius: var(--radius);
+    background: var(--surface-2); color: var(--text-muted);
+    border: 1px solid var(--border);
+    display: inline-flex; align-items: center; gap: 4px;
+    font-weight: 600; justify-content: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cloud-status.ok { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+  .cloud-status.new { background: var(--gold-bg); color: var(--accent-strong); border-color: var(--gold); cursor: pointer; }
+  .cloud-status.off { background: var(--surface-2); color: var(--text-light); }
+  .cloud-sync-btn { flex: 0 0 auto; width: 28px; }
+  .cloud-sync-btn.spinning { animation: cloudspin 0.8s linear infinite; }
+  @keyframes cloudspin { to { transform: rotate(360deg); } }
+  .cloud-viewer-toggle {
+    font-size: 10px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 4px 0; cursor: pointer; user-select: none;
+  }
+  .cloud-viewer-toggle input { cursor: pointer; }
+  .global-search-container {
+    position: relative;
+  }
+  .global-search-input {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    height: 34px;
+    box-shadow: var(--shadow-soft);
+  }
+  .global-search-input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  .global-search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 380px;
+    max-width: calc(100vw - 30px);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-strong);
+    max-height: 70vh;
+    overflow-y: auto;
+    z-index: 60;
+  }
+  .global-search-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 13px;
+  }
+  .gsr-item-group {
+    border-bottom: 1px solid var(--border);
+  }
+  .gsr-item-group:last-child { border-bottom: none; }
+  .gsr-item-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px 6px;
+    background: var(--surface-2);
+    font-family: var(--font-title);
+    font-weight: 600;
+    color: var(--text-title);
+  }
+  .gsr-item-header img {
+    width: 24px; height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .gsr-item-header .name { flex: 1; }
+  .gsr-item-header .total {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 500;
+  }
+  .gsr-locations {
+    padding: 4px 0;
+  }
+  .gsr-location {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px 6px 48px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .gsr-location:hover, .gsr-location.kbd-active {
+    background: var(--accent-bg);
+  }
+  .gsr-location .account-name {
+    flex: 1;
+    color: var(--text);
+  }
+  .gsr-location .server-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .gsr-location .qty {
+    font-weight: 700;
+    color: var(--text-title);
+    min-width: 32px;
+    text-align: right;
+  }
+  /* Accounts list: now a vertical column in the sidebar */
+  .accounts-list, .accounts-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: stretch;
+  }
+  .account-tab {
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: var(--radius);
+    font-size: 13px; cursor: pointer; color: var(--text);
+    font-family: inherit;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.12s;
+    text-align: left;
+    width: 100%;
+  }
+  .account-tab > span:first-child {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .account-tab:hover {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  .account-tab.active {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent-strong);
+    font-weight: 600;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .account-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 8px; font-size: 10px; font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .account-badge.today { background: var(--warning); color: #fff; }
+  .account-badge.overdue { background: var(--danger); color: #fff; }
+  .account-badge.goal { background: var(--success); color: #fff; padding: 0; min-width: 16px; }
+  .account-badge.goal.almost { background: var(--warning); color: #fff; }
+  .account-tab.active .account-badge.today,
+  .account-tab.active .account-badge.overdue,
+  .account-tab.active .account-badge.goal { box-shadow: 0 0 0 1.5px var(--surface); }
+  .add-account-btn {
+    padding: 6px 10px;
+    border: 1px dashed var(--border-strong);
+    background: transparent;
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.15s;
+    margin-top: 4px;
+    text-align: left;
+  }
+  .add-account-btn:hover {
+    background: var(--surface-2);
+    color: var(--text-title);
+    border-color: var(--text-title);
+  }
+  /* Server bar — now compact "pills" inline with the view tabs */
+  .server-bar {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    align-items: center;
+    margin: 0;
+  }
+  .server-bar-label {
+    font-size: 10px; color: var(--text-muted); margin-right: 4px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .server-tab {
+    padding: 3px 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: var(--radius);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .server-tab:hover { background: var(--surface-2); color: var(--text); }
+  .server-tab.active {
+    background: var(--text-title);
+    color: var(--surface);
+    border-color: var(--text-title);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .server-tab.active .account-badge.today,
+  .server-tab.active .account-badge.overdue,
+  .server-tab.active .account-badge.goal { box-shadow: 0 0 0 1.5px var(--text-title); }
+  .view-tabs {
+    display: flex; gap: 2px;
+    margin: 0 0 0 auto;
+    flex-wrap: wrap;
+  }
+  .view-tab {
+    padding: 6px 14px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: inherit;
+    border-radius: var(--radius);
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .view-tab:hover { color: var(--text); background: var(--surface-2); }
+  .view-tab.active {
+    color: var(--surface);
+    background: var(--text-title);
+    border-color: var(--text-title);
+    font-weight: 700;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 12px; right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      var(--gold) 20%,
+      var(--gold) 80%,
+      transparent 100%);
+    opacity: 0.6;
+    border-radius: 1px;
+  }
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; gap: 10px; flex-wrap: wrap;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 17px; font-weight: 700; margin: 0;
+    color: var(--text-title);
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  .panel-subtitle {
+    font-size: 12px; color: var(--text-muted); margin-left: 8px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: var(--font-title);
+    font-weight: 400;
+  }
+  .panel-actions { display: flex; gap: 8px; }
+  .btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    font-family: inherit;
+    font-weight: 600;
+    transition: all 0.15s;
+    box-shadow: var(--shadow-soft);
+  }
+  .btn:hover {
+    background: var(--surface-3);
+    color: var(--text-title);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-strong);
+  }
+  .btn:active { transform: translateY(0); box-shadow: var(--shadow-soft); }
+  .btn.primary {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent-strong);
+  }
+  .btn.primary:hover { background: var(--accent-strong); color: var(--surface); }
+  .btn.success {
+    background: var(--success);
+    color: var(--surface);
+    border-color: var(--success);
+  }
+  .btn.success:hover { background: var(--success); filter: brightness(0.9); }
+  .btn.danger:hover {
+    background: var(--danger);
+    color: var(--surface);
+    border-color: var(--danger);
+  }
+  .add-task-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .add-task-row input[type="text"] { flex: 1 1 200px; min-width: 0; }
+  .add-task-row input[type="date"] { width: 150px; }
+  .add-task-row select { width: 140px; }
+  input, select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    height: 36px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .stat-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    box-shadow: var(--shadow-soft);
+  }
+  .stat-label {
+    font-size: 10px; color: var(--text-muted);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .stat-value {
+    font-size: 19px; font-weight: 700;
+    color: var(--text-title);
+    font-family: var(--font-title);
+    line-height: 1.2;
+  }
+  .reminders-section {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-soft);
+  }
+  .reminders-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--warning); margin: 0 0 8px;
+    font-family: var(--font-title);
+  }
+  .reminder-item { font-size: 13px; color: var(--warning); padding: 3px 0; }
+  .filter-bar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; font-size: 13px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: var(--radius);
+    cursor: pointer; font-size: 12px;
+    color: var(--text-muted); font-family: inherit;
+    font-weight: 600;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent-strong);
+  }
+  .task-list { list-style: none; padding: 0; margin: 0; }
+  .task-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-item input[type="checkbox"] {
+    width: 18px; height: 18px;
+    cursor: pointer; flex-shrink: 0;
+    accent-color: var(--accent-strong);
+  }
+  .task-text { flex: 1; font-size: 14px; min-width: 0; word-break: break-word; }
+  .task-text.done { text-decoration: line-through; color: var(--text-light); font-style: italic; }
+  .task-meta { display: flex; gap: 6px; align-items: center; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .badge {
+    font-size: 11px; padding: 3px 10px;
+    border-radius: var(--radius);
+    white-space: nowrap;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .badge-date {
+    background: var(--accent-bg); color: var(--accent-strong);
+    border-color: var(--accent);
+  }
+  .badge-date.overdue {
+    background: var(--danger-bg); color: var(--danger);
+    border-color: var(--danger);
+  }
+  .badge-date.today {
+    background: var(--warning-bg); color: var(--warning);
+    border-color: var(--warning);
+  }
+  .badge-recurring {
+    background: var(--surface-2); color: var(--text-muted);
+    border-color: var(--border);
+  }
+  .delete-task {
+    background: transparent; border: none; cursor: pointer; color: var(--text-light);
+    font-size: 18px; padding: 2px 8px; border-radius: var(--radius); line-height: 1;
+  }
+  .delete-task:hover { color: var(--danger); background: var(--danger-bg); }
+  .empty {
+    text-align: center; padding: 2rem 1rem;
+    color: var(--text-light); font-size: 14px;
+    font-style: italic;
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20, 30, 5, 0.55);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .modal {
+    background: var(--surface);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    min-width: 280px; max-width: 90vw; width: 420px;
+    box-shadow: var(--shadow-strong);
+    position: relative;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 6px; left: 12px; right: 12px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .modal h3 {
+    margin: 0 0 12px; font-size: 17px; font-weight: 700;
+    color: var(--text-title);
+    font-family: var(--font-title);
+  }
+  .modal p { margin: 0 0 12px; font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .modal input, .modal select { width: 100%; margin-bottom: 12px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .info-text {
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 1.5rem; text-align: center;
+    font-style: italic;
+  }
+  kbd {
+    display: inline-block;
+    padding: 2px 7px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--border-strong);
+    min-width: 18px;
+    text-align: center;
+  }
+
+  /* Inventory styles */
+  .inv-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .inv-shared-note {
+    background: var(--accent-bg);
+    color: var(--text-title);
+    border: 1px solid var(--accent);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 11px;
+    margin-bottom: 8px;
+    font-style: italic;
+    line-height: 1.4;
+  }
+  .inv-updated-at {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-style: italic;
+  }
+  .inv-updated-at::before {
+    content: '🕒';
+    font-style: normal;
+  }
+  .inv-updated-at.never {
+    color: var(--text-light);
+  }
+  .inv-section-header {
+    font-size: 12px; font-weight: 700; color: var(--text);
+    margin: 14px 0 6px; padding-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: var(--font-title);
+    border-bottom: 1px solid var(--border);
+  }
+  .inv-section-header.in-stock { color: var(--success); }
+  .inv-section-header.out-stock { color: var(--text-muted); }
+  .inv-section-header:first-child { margin-top: 0; }
+
+  /* Categories layout: CSS columns flow from top to bottom so a short
+     category isn't padded with empty space when the next is much taller.
+     break-inside: avoid keeps each category in one piece. */
+  .inv-categories-grid {
+    column-count: 1;
+    column-gap: 18px;
+  }
+  @media (min-width: 1100px) {
+    .inv-categories-grid {
+      column-count: 2;
+    }
+  }
+  .inv-category {
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 14px;
+    /* Required so the first category in each column doesn't get a top margin */
+    display: inline-block;
+    width: 100%;
+  }
+  .inv-category-header {
+    font-size: 13px; font-weight: 700; color: var(--text-title);
+    margin: 0 0 4px; padding-bottom: 3px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-title);
+  }
+  .inv-category-count {
+    font-size: 10px; color: var(--text-muted); font-weight: 500;
+    font-style: italic;
+  }
+  .inv-list { list-style: none; padding: 0; margin: 0; }
+  .inv-item-image {
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  .inv-item {
+    display: flex; align-items: center; gap: 6px; padding: 3px 6px;
+    border-radius: var(--radius);
+    transition: background 0.15s;
+    border: 1px solid transparent;
+    margin-bottom: 1px;
+    min-height: 30px;
+  }
+  .inv-item:hover {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  .inv-item.in-stock {
+    background: var(--success-bg);
+    border-color: var(--success);
+  }
+  .inv-item.in-stock:hover {
+    background: var(--success-bg);
+    filter: brightness(0.95);
+  }
+  .inv-item-name {
+    flex: 1; font-size: 13px; min-width: 0; word-break: break-word;
+    color: var(--text-highlight);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .inv-item.out .inv-item-name {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .inv-item.in-stock .inv-item-name {
+    color: var(--text-title);
+    font-weight: 700;
+  }
+  .inv-controls { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .qty-btn {
+    width: 22px; height: 22px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: var(--radius);
+    cursor: pointer; font-size: 14px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    font-weight: 700;
+    transition: all 0.15s;
+  }
+  .qty-btn:hover {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent-strong);
+  }
+  .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .qty-btn:disabled:hover { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+  .qty-display {
+    min-width: 24px; text-align: center; font-size: 13px; font-weight: 700;
+    color: var(--text);
+  }
+  .qty-input {
+    width: 60px; height: 22px; padding: 2px 4px; font-size: 12px;
+    text-align: center; font-weight: 500;
+  }
+  .inv-item.out .qty-display { color: var(--text-light); }
+  .inv-other-accounts {
+    font-size: 11px; color: var(--text-light); margin-left: 2px;
+    white-space: nowrap;
+    position: relative;
+    cursor: help;
+  }
+  .inv-total-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    background: var(--text);
+    color: var(--bg);
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 50;
+    text-align: left;
+  }
+  .inv-other-accounts:hover .inv-total-tooltip,
+  .inv-other-accounts:focus-within .inv-total-tooltip {
+    opacity: 1;
+  }
+  .inv-total-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .inv-total-tooltip-row .name {
+    font-weight: 400; opacity: 0.85;
+  }
+  .inv-total-tooltip-row .qty {
+    font-weight: 600;
+  }
+  .inv-total-tooltip-row.is-active .name {
+    font-weight: 500; opacity: 1;
+  }
+  .inv-total-tooltip-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.15);
+  }
+  .inv-delete {
+    background: transparent; border: none; cursor: pointer; color: var(--text-light);
+    font-size: 14px; padding: 2px 4px; border-radius: var(--radius); line-height: 1;
+    margin-left: 2px;
+  }
+  .inv-delete:hover { color: var(--danger); background: var(--danger-bg); }
+  .inv-edit {
+    background: transparent; border: none; cursor: pointer; color: var(--text-light);
+    font-size: 11px; padding: 2px 4px; border-radius: var(--radius); line-height: 1;
+    margin-left: 2px;
+  }
+  .inv-edit:hover { color: var(--accent); background: var(--accent-bg); }
+  .inv-add-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .inv-add-row input[type="text"] { flex: 1 1 200px; min-width: 0; }
+  .inv-add-row select { width: 180px; }
+  .inv-search { width: 100%; margin-bottom: 10px; }
+  .inv-filter-bar {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .inv-filter-bar .filter-label {
+    font-size: 11px; color: var(--text-muted);
+    margin-right: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  /* Buses styles */
+  .buses-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px; margin-top: 0.5rem;
+  }
+  .buse-card {
+    background: var(--surface-2);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-soft);
+  }
+  .buse-label {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-title);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    font-family: var(--font-title);
+  }
+  .buse-input {
+    width: 100%;
+    font-size: 30px; font-weight: 700;
+    text-align: center; height: 60px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text-title);
+    font-family: var(--font-title);
+  }
+  .buse-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .buse-extra {
+    margin-top: 10px; font-size: 13px; color: var(--text-muted);
+    text-align: center;
+  }
+  .buse-lots {
+    font-weight: 700;
+    color: var(--gold);
+    font-family: var(--font-title);
+  }
+  .buses-summary {
+    background: var(--accent-bg);
+    color: var(--text-title);
+    border: 1px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    margin-top: 1rem; font-size: 13px;
+    box-shadow: var(--shadow-soft);
+  }
+  .buses-goal-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-top: 1rem;
+    transition: all 0.25s ease;
+  }
+  .buses-goal-card.status-almost {
+    background: var(--warning-bg);
+    border-color: var(--warning);
+    border-width: 2px;
+  }
+  .buses-goal-card.status-reached {
+    background: var(--success-bg);
+    border-color: var(--success);
+    border-width: 2px;
+  }
+  .buses-goal-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .buses-goal-label {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    font-family: var(--font-title);
+  }
+  .buses-goal-card.status-almost .buses-goal-label { color: var(--warning); }
+  .buses-goal-card.status-reached .buses-goal-label { color: var(--success); }
+  .buses-goal-value {
+    font-size: 14px; color: var(--text-muted);
+    font-family: var(--font-title);
+  }
+  .buses-goal-value strong {
+    font-size: 18px; color: var(--text);
+  }
+  .buses-goal-card.status-almost .buses-goal-value strong { color: var(--warning); }
+  .buses-goal-card.status-reached .buses-goal-value strong { color: var(--success); }
+  .buses-goal-progress {
+    height: 8px;
+    background: var(--surface);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .buses-goal-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--accent));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .buses-goal-card.status-almost .buses-goal-progress-fill {
+    background: linear-gradient(90deg, var(--gold), var(--warning));
+  }
+  .buses-goal-card.status-reached .buses-goal-progress-fill {
+    background: linear-gradient(90deg, var(--success), var(--success));
+  }
+  .buses-goal-hint {
+    font-size: 12px; color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Exchanges counter */
+  .exchanges-card {
+    background: var(--gold-bg);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    box-shadow: var(--shadow-soft);
+  }
+  .exchanges-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .exchanges-label {
+    font-size: 13px; font-weight: 700;
+    color: var(--text-title);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-family: var(--font-title);
+  }
+  .exchanges-reset-info {
+    font-size: 11px; color: var(--text-muted); margin-left: 6px;
+    font-style: italic;
+  }
+  .exchanges-controls { display: flex; align-items: center; gap: 8px; }
+  .exchanges-value {
+    font-size: 24px; font-weight: 700;
+    min-width: 60px; text-align: center;
+    color: var(--text-title);
+    font-family: var(--font-title);
+  }
+  .exchanges-value.maxed { color: var(--danger); }
+  .exchanges-value.empty { color: var(--text-muted); }
+  .exchanges-btn {
+    width: 38px; height: 38px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 22px; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .exchanges-btn:hover {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent-strong);
+  }
+  .exchanges-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .exchanges-btn:disabled:hover { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+</style>
+<script>
+  // Restore saved theme before rendering to avoid a flash of unstyled content
+  (function() {
+    try {
+      const saved = localStorage.getItem('equideow-theme');
+      if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        // No saved preference: use system preference
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1 class="sidebar-title">⚜ Equideow ⚜</h1>
+      <div class="sidebar-actions">
+        <button class="icon-btn" id="exportBtn" title="Télécharger une sauvegarde">💾</button>
+        <button class="icon-btn" id="importBtn" title="Restaurer depuis un fichier">📂</button>
+        <button class="icon-btn" id="themeToggle" title="Basculer le thème">🌙</button>
+        <button class="icon-btn" id="helpBtn" title="Aide & raccourcis (?)">?</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+      </div>
+    </div>
+
+    <div class="sidebar-backup">
+      <span id="backupStatus" class="backup-status"></span>
+    </div>
+
+    <div class="sidebar-cloud">
+      <span id="cloudStatus" class="cloud-status off" title="État de la synchronisation cloud (lecture du Gist)">☁ …</span>
+      <button class="icon-btn cloud-sync-btn" id="cloudSyncBtn" title="Synchroniser maintenant">↻</button>
+    </div>
+    <label class="cloud-viewer-toggle" title="Sur cet appareil, charger automatiquement les données du cloud. À activer sur le téléphone, à laisser décoché sur le PC.">
+      <input type="checkbox" id="cloudViewerToggle"> Afficher auto (cloud)
+    </label>
+
+    <div class="global-search-container">
+      <input type="text" id="globalSearch" class="global-search-input" placeholder="🔍 Rechercher (Ctrl+K)…" autocomplete="off">
+      <div class="global-search-results" id="globalSearchResults" hidden></div>
+    </div>
+
+    <div class="sidebar-section-label">Mes comptes</div>
+    <div class="accounts-list" id="accountsBar"></div>
+  </aside>
+
+  <main class="main-content">
+    <div class="main-toolbar">
+      <div class="server-bar" id="serverBar"></div>
+      <div class="view-tabs" id="viewTabs">
+        <button class="view-tab active" data-view="tasks">📋 Tâches</button>
+        <button class="view-tab" data-view="inventory">📦 Inventaire MN</button>
+        <button class="view-tab" data-view="buses">🐴 Buses</button>
+      </div>
+    </div>
+    <div id="mainPanel"></div>
+  </main>
+</div>
+<div id="modalContainer"></div>
+
+<script>
+(function() {
+  // ============================================================
+  // CONFIGURATION & CONSTANTS
+  // ============================================================
+  const STORAGE_KEY = 'equideow-data-v5';
+  const OLD_KEYS = ['equideow-data-v4', 'equideow-data-v3', 'equideow-data-v2', 'equideow-data-v1'];
+  const META_KEY = 'equideow-meta-v1';
+  const CHANGES_BEFORE_BACKUP = 10;
+  const DAYS_BEFORE_BACKUP_REMINDER = 7;
+  const STOCK_M_LOT_SIZE = 200;
+  const EXCHANGES_MAX = 3;
+  // Buses goal thresholds (sum of Repro + Stock F + Stock M)
+  const BUSES_GOAL_TOTAL = 1000;    // green ✓ at this threshold
+  const BUSES_GOAL_WARN = 900;      // orange ◐ between WARN and TOTAL
+  const FREE_INPUT_ITEM_NAMES = ['point de vieillissement'];
+  const SERVERS = ['gaia', 'ouranos'];
+  const SERVER_LABELS = { gaia: 'Gaïa', ouranos: 'Ouranos' };
+  // Special sentinel value for the active account when the user is on the
+  // aggregated "Tous les comptes" view. Treated as a virtual read-only account.
+  const ALL_ACCOUNTS_ID = '__all__';
+
+  // ============================================================
+  // CLOUD SYNC (lecture via Gist secret)
+  // Le PC pousse les données dans le Gist (script Tampermonkey, jalon 3).
+  // Ce gestionnaire LIT le Gist (aucun token nécessaire côté lecture),
+  // ce qui permet de consulter l'inventaire depuis le téléphone.
+  // ============================================================
+  const CLOUD = {
+    gistId: '86bb9a770a62e3d8a88aa0aa4a5c7d3f',
+    file: 'equideow-data.json',
+    get api() { return 'https://api.github.com/gists/' + this.gistId; }
+  };
+  const CLOUD_VIEWER_KEY = 'equideow-cloud-viewer'; // '1' = appareil afficheur (auto-sync)
+  let lastCloud = null;          // dernier état cloud récupéré
+  let lastCloudFetchAt = 0;      // timestamp du dernier fetch (anti-spam)
+
+  const CATEGORIES = [
+    { id: 'optimisation', label: 'Optimisation' },
+    { id: 'personnalisation', label: 'Personnalisation' },
+    { id: 'reproduction', label: 'Reproduction' },
+    { id: 'vieillissement', label: 'Vieillissement' },
+    { id: 'bonus', label: 'Bonus' },
+    { id: 'compagnons', label: 'Compagnons' },
+    { id: 'chance', label: 'Chance' },
+    { id: 'autres', label: 'Autres' }
+  ];
+
+  // Equideow's image URL template — slug filled in dynamically. The "32" is
+  // the pixel size; the game has multiple sizes available (16, 24, 32, 64).
+  const ITEM_IMAGE_BASE = 'https://gaia.equideow.com/media/equideo/image//produits/32/';
+  function imageUrlForSlug(slug) {
+    if (!slug) return null;
+    return ITEM_IMAGE_BASE + slug + '.png';
+  }
+
+  const DEFAULT_ITEMS = [
+    { slug: 'pandore-box',         name: 'Boîte de Pandore',         category: 'optimisation' },
+    { slug: 'caresse-philotes',    name: 'Caresse de Philotès',      category: 'optimisation' },
+    { slug: 'couverture-hypnos',   name: "Couverture d'Hypnos",      category: 'optimisation' },
+    { slug: 'kairos-watch',        name: 'Cadran de Kairos',         category: 'optimisation' },
+    { slug: 'orchidee-noire',      name: 'Orchidée Noire',           category: 'optimisation' },
+    { slug: 'pack-nyx',            name: 'Pack de Nyx',              category: 'optimisation' },
+    { slug: 'parchemin-ploutos',   name: 'Parchemin de Ploutos',     category: 'optimisation' },
+    { slug: 'pierre-philosophale', name: 'Pierre Philosophale',      category: 'optimisation' },
+    { slug: 'sablier-chronos',     name: 'Sablier de Chronos',       category: 'optimisation' },
+    { slug: 'talon-achille',       name: "Talon d'Achille",          category: 'optimisation' },
+    { slug: 'rocher-sisyphe',      name: 'Rocher de Sisyphe',        category: 'optimisation' },
+    { slug: '5th-element',         name: '5ème Élément',             category: 'personnalisation' },
+    { slug: 'mane-pin',            name: 'Pions de crinière',        category: 'personnalisation' },
+    { slug: 'echarpe-iris',        name: "Écharpe d'Iris",           category: 'personnalisation' },
+    { slug: 'lyre-apollon',        name: "Lyre d'Apollon",           category: 'personnalisation' },
+    { slug: 'pack-harmonie',       name: "Pack d'Harmonie",          category: 'personnalisation' },
+    { slug: 'pomme-or',            name: "Pomme d'Or",               category: 'personnalisation' },
+    { slug: 'pomme-vintage',       name: 'Pomme Vintage',            category: 'personnalisation' },
+    { slug: 'rayon-helios',        name: "Rayon d'Hélios",           category: 'personnalisation' },
+    { slug: 'rayon-helios-ow',     name: "Rayon d'Hélios de Ow",     category: 'personnalisation' },
+    { slug: 'sang-meduse',         name: 'Sang de Méduse',           category: 'personnalisation' },
+    { slug: 'tail-braid-1',        name: 'Tresse de queue torsadée', category: 'personnalisation' },
+    { slug: 'tail-braid-2',        name: 'Tresse de queue enroulée', category: 'personnalisation' },
+    { slug: 'baton-fertilite',     name: 'Bâton de Fertilité',       category: 'reproduction' },
+    { slug: 'eclair-zeus',         name: 'Éclair de Zeus',           category: 'reproduction' },
+    { slug: 'fleche-artemis',      name: "Flèche d'Artémis",         category: 'reproduction' },
+    { slug: 'larmes-aphrodite',    name: "Larmes d'Aphrodite",       category: 'reproduction' },
+    { slug: 'pack-hera',           name: "Pack d'Héra",              category: 'reproduction' },
+    { slug: 'bras-morphee',        name: 'Bras de Morphée',          category: 'vieillissement' },
+    { slug: 'eau-jouvence',        name: 'Eau de Jouvence',          category: 'vieillissement' },
+    { slug: 'fragment-nuage',      name: 'Fragment de Nuage',        category: 'vieillissement' },
+    { slug: 'vieillissement',      name: 'Point de vieillissement',  category: 'vieillissement' },
+    { slug: 'pack-bonus',          name: 'Pack de Bonus',            category: 'bonus' },
+    { slug: 'pack-poseidon',       name: 'Pack de Poséidon',         category: 'bonus' },
+    { slug: 'pactole-cresus',      name: 'Pactole de Crésus',        category: 'bonus' },
+    // Compagnons — slugs unknown / may be themed differently; left without
+    // for now, will fill in when imported from the game.
+    { name: 'Flamme Des Dragons',  category: 'compagnons' },
+    { name: 'Boulet de Fantôme',   category: 'compagnons' },
+    { name: 'Cat-Sidhe',           category: 'compagnons' },
+    { name: 'Cu-Sidhe',            category: 'compagnons' },
+    { slug: 'corne-abondance',     name: "Corne d'Abondance",        category: 'chance' },
+    { slug: 'defi-titans',         name: 'Défi des Titans',          category: 'chance' },
+    { slug: 'toison-or',           name: "Toison d'Or",              category: 'chance' },
+    { slug: 'couronne-tyche',      name: 'Couronne de Tyché',        category: 'chance' }
+  ];
+
+  // ============================================================
+  // DATA SHAPE (v5):
+  //
+  // state = {
+  //   accounts: [
+  //     {
+  //       id, name,
+  //       servers: {
+  //         gaia:    { tasks, quantities, buses, exchanges },
+  //         ouranos: { tasks, quantities, buses, exchanges }
+  //       }
+  //     }
+  //   ],
+  //   itemCatalog: [{id, name, category, slug?}],   // global, shared
+  //   activeAccountId, activeServer, currentView
+  // }
+  // ============================================================
+
+  let state = {
+    accounts: [],
+    itemCatalog: [],
+    activeAccountId: null,
+    activeServer: 'gaia',
+    currentView: 'tasks',
+    updatedAt: null   // ISO global : horodatage de la dernière modif (pour comparer au cloud)
+  };
+  let meta = { changesSinceBackup: 0, lastBackupAt: null };
+  let currentFilter = 'all';
+  let inventoryFilter = 'all';        // 'all' | 'inStock' | 'outOfStock' | category id
+  let inventorySortSnapshot = null;
+  let snapshotForKey = null;  // now keyed by accountId + server
+
+  // ============================================================
+  // FACTORIES & HELPERS
+  // ============================================================
+  function isFreeInputItem(name) {
+    return FREE_INPUT_ITEM_NAMES.includes(name.toLowerCase());
+  }
+
+  // Whether an item should count toward the "Total d'objets" stat.
+  // We exclude:
+  //   - Compagnons (they're entities, not stockable items)
+  //   - Point de vieillissement (cumulative resource that would dwarf everything)
+  function itemCountsInTotal(item) {
+    if (!item) return false;
+    if (item.category === 'compagnons') return false;
+    if (isFreeInputItem(item.name)) return false;
+    return true;
+  }
+
+  function makeDefaultCatalog() {
+    return DEFAULT_ITEMS.map((item, i) => ({
+      id: 'item_' + i,
+      name: item.name,
+      category: item.category,
+      slug: item.slug
+    }));
+  }
+
+  function makeDefaultBuses() {
+    return { repro: 0, stockF: 0, stockM: 0 };
+  }
+
+  function makeDefaultExchanges() {
+    return { count: 0, lastResetWeekKey: getCurrentWeekKey() };
+  }
+
+  function makeDefaultServerData() {
+    return {
+      tasks: [],
+      quantities: {},
+      buses: makeDefaultBuses(),
+      exchanges: makeDefaultExchanges(),
+      busesGoalReached: false,
+      inventoryUpdatedAt: null  // ISO timestamp of last inventory change
+    };
+  }
+
+  function makeDefaultAccount(name) {
+    return {
+      id: 'a' + Date.now() + Math.random().toString(36).slice(2, 5),
+      name: name,
+      servers: {
+        gaia: makeDefaultServerData(),
+        ouranos: makeDefaultServerData()
+      }
+    };
+  }
+
+  function getCurrentWeekKey() {
+    const now = new Date();
+    const day = now.getDay();
+    const daysSinceMonday = (day === 0) ? 6 : day - 1;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
+    return monday.getFullYear() + '-' +
+      String(monday.getMonth() + 1).padStart(2, '0') + '-' +
+      String(monday.getDate()).padStart(2, '0');
+  }
+
+  function getNextMondayDate() {
+    const now = new Date();
+    const day = now.getDay();
+    const daysUntilNextMonday = (day === 0) ? 1 : (8 - day);
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilNextMonday);
+  }
+
+  function formatResetInfo() {
+    const next = getNextMondayDate();
+    const now = new Date();
+    const diffMs = next - now;
+    const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffD = Math.floor(diffH / 24);
+    return diffD >= 1 ? `Reset dans ${diffD}j` : `Reset dans ${diffH}h`;
+  }
+
+  function uid(prefix) { return (prefix || 't') + Date.now() + Math.random().toString(36).slice(2, 7); }
+
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function formatDate(s) {
+    const [y,m,d] = s.split('-');
+    return d + '/' + m;
+  }
+
+  function getDateBadge(dateStr) {
+    if (!dateStr) return null;
+    const today = todayStr();
+    if (dateStr < today) return { cls: 'overdue', label: 'En retard - ' + formatDate(dateStr) };
+    if (dateStr === today) return { cls: 'today', label: "Aujourd'hui" };
+    return { cls: '', label: formatDate(dateStr) };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ============================================================
+  // ACTIVE-DATA SHORTCUTS
+  // ============================================================
+  function isAllAccountsView() {
+    return state.activeAccountId === ALL_ACCOUNTS_ID;
+  }
+
+  function getActiveAccount() {
+    return state.accounts.find(a => a.id === state.activeAccountId);
+  }
+
+  function getActiveServerData() {
+    const acc = getActiveAccount();
+    if (!acc) return null;
+    return acc.servers[state.activeServer];
+  }
+
+  function getQty(serverData, itemId) {
+    return serverData.quantities[itemId] || 0;
+  }
+
+  // Marks the given (compte, serveur) inventory as updated now.
+  // Call this whenever quantities are written (+/-, free-input, catalog add,
+  // catalog remove, import). Doesn't save by itself — the caller usually
+  // already does saveState() or recordChange().
+  function markInventoryUpdated(serverData) {
+    if (!serverData) return;
+    serverData.inventoryUpdatedAt = new Date().toISOString();
+  }
+
+  // Formats an inventory-updated timestamp in a friendly French way:
+  //   - very recent → "à l'instant"
+  //   - < 1h        → "il y a 5 min"
+  //   - same day    → "aujourd'hui à 14:32"
+  //   - yesterday   → "hier à 09:15"
+  //   - older       → "le 12/05 à 18:40"
+  function formatInventoryUpdated(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "à l'instant";
+    if (diffMin < 60) return 'il y a ' + diffMin + ' min';
+
+    const sameDay = d.toDateString() === now.toDateString();
+    const yesterday = new Date(now.getTime() - 86400000);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    if (sameDay) return "aujourd'hui à " + hh + ':' + mm;
+    if (isYesterday) return 'hier à ' + hh + ':' + mm;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    return 'le ' + dd + '/' + mo + ' à ' + hh + ':' + mm;
+  }
+
+  // Returns aggregated quantity of an item on the active server, summed
+  // across all real accounts. Used by the "Tous les comptes" view.
+  function getAggregatedQty(itemId) {
+    let total = 0;
+    state.accounts.forEach(a => {
+      total += getQty(a.servers[state.activeServer], itemId);
+    });
+    return total;
+  }
+
+  // ============================================================
+  // MIGRATION
+  // ============================================================
+  // Detects a server suffix/prefix in a name like "Lison Gaïa", "Ouranos -
+  // Lison", "Pip Gaia", "G - Lison", etc. Returns { baseName, server } or null.
+  function detectServerInName(name) {
+    if (!name) return null;
+    const trimmed = name.trim();
+    // We support several spellings:
+    //   - Full names: Gaïa, Gaia, Ouranos
+    //   - Single-letter abbreviations: G, O — but ONLY when surrounded by
+    //     explicit separators (space, dash, slash, etc.) at the end or start,
+    //     so we don't accidentally match real names starting with G or O.
+    const SEP = '[\\s\\-_/|·:]+';
+    const patterns = [
+      // Full names at the end / start
+      { server: 'gaia',    re: new RegExp('(.*?)' + SEP + '(?:ga[ïi]a|gaia)\\s*$', 'i') },
+      { server: 'gaia',    re: new RegExp('^(?:ga[ïi]a|gaia)' + SEP + '(.+)$', 'i') },
+      { server: 'ouranos', re: new RegExp('(.*?)' + SEP + 'ouranos\\s*$', 'i') },
+      { server: 'ouranos', re: new RegExp('^ouranos' + SEP + '(.+)$', 'i') },
+      // Short abbreviations at the end / start (single letter only)
+      { server: 'gaia',    re: new RegExp('(.*?)' + SEP + 'g\\s*$', 'i') },
+      { server: 'gaia',    re: new RegExp('^g' + SEP + '(.+)$', 'i') },
+      { server: 'ouranos', re: new RegExp('(.*?)' + SEP + 'o\\s*$', 'i') },
+      { server: 'ouranos', re: new RegExp('^o' + SEP + '(.+)$', 'i') }
+    ];
+    for (const p of patterns) {
+      const m = trimmed.match(p.re);
+      if (m && m[1] && m[1].trim()) {
+        return { baseName: m[1].trim(), server: p.server };
+      }
+    }
+    // Bare server names → no real base name
+    if (/^(?:ga[ïi]a|gaia)$/i.test(trimmed)) {
+      return { baseName: trimmed, server: 'gaia', bare: true };
+    }
+    if (/^ouranos$/i.test(trimmed)) {
+      return { baseName: trimmed, server: 'ouranos', bare: true };
+    }
+    return null;
+  }
+
+  // Convert a v1-v4 account to v5 server-data shape (using its existing fields
+  // as data for ONE specific server)
+  function accountToServerData(oldAcc) {
+    return {
+      tasks: oldAcc.tasks || [],
+      quantities: oldAcc.quantities || {},
+      buses: oldAcc.buses || makeDefaultBuses(),
+      exchanges: oldAcc.exchanges || makeDefaultExchanges()
+    };
+  }
+
+  function migrateOldData(oldData) {
+    if (!oldData.accounts) return null;
+
+    // First pass: rebuild the catalog (we may need to add missing items)
+    let catalog = makeDefaultCatalog();
+    let nameToId = new Map();
+    catalog.forEach(c => nameToId.set(c.name.toLowerCase(), c.id));
+
+    const oldIdToName = new Map();
+    if (oldData.itemCatalog) {
+      oldData.itemCatalog.forEach(item => {
+        oldIdToName.set(item.id, item.name);
+        if (!nameToId.has(item.name.toLowerCase())) {
+          const newId = 'item_extra_' + catalog.length;
+          catalog.push({ id: newId, name: item.name, category: 'autres', slug: item.slug });
+          nameToId.set(item.name.toLowerCase(), newId);
+        } else if (item.slug) {
+          // Attach slug to a pre-filled catalog item if we know it
+          const existingId = nameToId.get(item.name.toLowerCase());
+          const existing = catalog.find(c => c.id === existingId);
+          if (existing && !existing.slug) existing.slug = item.slug;
+        }
+      });
+    }
+
+    // Helper: rebuild quantities map using the new catalog ids
+    function migrateQuantities(oldQuantities, oldInventory) {
+      const out = {};
+      if (oldQuantities) {
+        Object.entries(oldQuantities).forEach(([oldId, qty]) => {
+          const itemName = oldIdToName.get(oldId);
+          if (itemName) {
+            const newId = nameToId.get(itemName.toLowerCase());
+            if (newId && qty > 0) out[newId] = qty;
+          }
+        });
+      } else if (oldInventory && Array.isArray(oldInventory)) {
+        oldInventory.forEach(item => {
+          if ((item.qty || 0) > 0) {
+            let newId = nameToId.get(item.name.toLowerCase());
+            if (!newId) {
+              newId = 'item_extra_' + catalog.length;
+              catalog.push({ id: newId, name: item.name, category: item.category || 'autres' });
+              nameToId.set(item.name.toLowerCase(), newId);
+            }
+            out[newId] = item.qty;
+          }
+        });
+      }
+      return out;
+    }
+
+    // Second pass: detect server suffix/prefix on each account name
+    // and group accounts that share the same base name.
+    const oldAccounts = oldData.accounts;
+    const groupedByBase = new Map(); // baseName lower → { gaia?: oldAcc, ouranos?: oldAcc, originalNames: [] }
+    const unassigned = []; // Accounts with no detectable server
+
+    oldAccounts.forEach(oldAcc => {
+      const detected = detectServerInName(oldAcc.name);
+      if (!detected) {
+        unassigned.push(oldAcc);
+        return;
+      }
+      const key = detected.bare ? detected.baseName.toLowerCase() : detected.baseName.toLowerCase();
+      if (!groupedByBase.has(key)) {
+        groupedByBase.set(key, {
+          baseName: detected.baseName,
+          bare: detected.bare,
+          gaia: null,
+          ouranos: null,
+          originalNames: []
+        });
+      }
+      const group = groupedByBase.get(key);
+      group.originalNames.push(oldAcc.name);
+      if (!group[detected.server]) {
+        group[detected.server] = oldAcc;
+      } else {
+        // Conflict: two accounts with same server tag — keep them separate
+        unassigned.push(oldAcc);
+      }
+    });
+
+    const newAccounts = [];
+
+    // Build merged accounts from groups
+    groupedByBase.forEach(group => {
+      // If both server slots are filled, merge them under the base name
+      // If only one is filled and it's a "bare" name (just "Gaïa" or "Ouranos"),
+      //   keep it as its own account named after the server
+      // If only one is filled and the base name is real, the other server stays empty
+      const accountName = group.bare
+        ? SERVER_LABELS[group.gaia ? 'gaia' : 'ouranos']
+        : group.baseName;
+
+      const newAcc = makeDefaultAccount(accountName);
+      if (group.gaia) {
+        const sd = accountToServerData(group.gaia);
+        sd.quantities = migrateQuantities(group.gaia.quantities, group.gaia.inventory);
+        newAcc.servers.gaia = sd;
+        // Preserve the original ID if there's only one server, useful for activeAccountId
+        if (!group.ouranos) newAcc.id = group.gaia.id;
+      }
+      if (group.ouranos) {
+        const sd = accountToServerData(group.ouranos);
+        sd.quantities = migrateQuantities(group.ouranos.quantities, group.ouranos.inventory);
+        newAcc.servers.ouranos = sd;
+        if (!group.gaia) newAcc.id = group.ouranos.id;
+      }
+      newAccounts.push(newAcc);
+    });
+
+    // Build unassigned accounts as-is (data goes to Gaïa server by default)
+    unassigned.forEach(oldAcc => {
+      const newAcc = makeDefaultAccount(oldAcc.name);
+      newAcc.id = oldAcc.id;
+      const sd = accountToServerData(oldAcc);
+      sd.quantities = migrateQuantities(oldAcc.quantities, oldAcc.inventory);
+      newAcc.servers.gaia = sd;
+      newAccounts.push(newAcc);
+    });
+
+    // Pick the active account: try to preserve the previously active one
+    let activeAccountId = newAccounts[0]?.id || null;
+    let activeServer = 'gaia';
+    if (oldData.activeId) {
+      const found = newAccounts.find(a => a.id === oldData.activeId);
+      if (found) activeAccountId = found.id;
+      // Also detect server from original name if possible
+      const oldActive = oldAccounts.find(a => a.id === oldData.activeId);
+      if (oldActive) {
+        const detected = detectServerInName(oldActive.name);
+        if (detected) {
+          // Find the new account that contains this server's data
+          const owner = newAccounts.find(a =>
+            (a.servers.gaia === accountToServerData(oldActive) ||
+             a.servers.ouranos === accountToServerData(oldActive))
+          );
+          if (owner) {
+            activeAccountId = owner.id;
+            activeServer = detected.server;
+          }
+        }
+      }
+    }
+
+    return {
+      accounts: newAccounts,
+      itemCatalog: catalog,
+      activeAccountId: activeAccountId,
+      activeServer: activeServer,
+      currentView: oldData.currentView || 'tasks'
+    };
+  }
+
+  // ============================================================
+  // PERSISTENCE
+  // ============================================================
+  // ============================================================
+  // CLOUD SYNC — lecture du Gist + application sécurisée
+  // ============================================================
+
+  function isCloudViewer() {
+    try { return localStorage.getItem(CLOUD_VIEWER_KEY) === '1'; } catch (e) { return false; }
+  }
+  function setCloudViewer(on) {
+    try { localStorage.setItem(CLOUD_VIEWER_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+
+  // Un état contient-il des données réelles (vs compte par défaut vide) ?
+  function stateHasContent(s) {
+    if (!s || !Array.isArray(s.accounts)) return false;
+    return s.accounts.some(a => a.servers && SERVERS.some(sv => {
+      const sd = a.servers[sv];
+      if (!sd) return false;
+      return (sd.tasks && sd.tasks.length) ||
+             (sd.quantities && Object.keys(sd.quantities).length) ||
+             (sd.buses && (sd.buses.repro || sd.buses.stockF || sd.buses.stockM));
+    }));
+  }
+
+  // Remet en forme un état importé (du cloud) : remplit les champs manquants.
+  function normalizeImported(obj) {
+    const imported = obj;
+    if (!imported.itemCatalog || imported.itemCatalog.length === 0) {
+      imported.itemCatalog = makeDefaultCatalog();
+    }
+    imported.accounts.forEach(acc => {
+      if (!acc.servers) acc.servers = {};
+      SERVERS.forEach(s => {
+        if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
+        const sd = acc.servers[s];
+        if (!sd.tasks) sd.tasks = [];
+        if (!sd.quantities) sd.quantities = {};
+        if (!sd.buses) sd.buses = makeDefaultBuses();
+        if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
+        if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
+        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+      });
+    });
+    if (!imported.currentView) imported.currentView = 'tasks';
+    if (!imported.activeServer || !SERVERS.includes(imported.activeServer)) imported.activeServer = 'gaia';
+    const validActive = imported.activeAccountId === ALL_ACCOUNTS_ID ||
+      (imported.activeAccountId && imported.accounts.find(a => a.id === imported.activeAccountId));
+    if (!validActive) imported.activeAccountId = imported.accounts[0]?.id || null;
+    if (imported.activeAccountId === ALL_ACCOUNTS_ID && imported.accounts.length < 2) {
+      imported.activeAccountId = imported.accounts[0]?.id || null;
+    }
+    return imported;
+  }
+
+  // Récupère le contenu du Gist. Renvoie l'objet état, ou null si vide.
+  async function fetchCloud() {
+    const res = await fetch(CLOUD.api, {
+      headers: { 'Accept': 'application/vnd.github+json' },
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const gist = await res.json();
+    const file = gist.files && gist.files[CLOUD.file];
+    if (!file) throw new Error('Fichier ' + CLOUD.file + ' absent du Gist');
+    let content = file.content;
+    if (file.truncated && file.raw_url) {
+      const r2 = await fetch(file.raw_url, { cache: 'no-store' });
+      content = await r2.text();
+    }
+    content = (content || '').trim();
+    if (!content || content === '{}') return null;
+    const parsed = JSON.parse(content);
+    if (!parsed || !Array.isArray(parsed.accounts)) return null;
+    return parsed;
+  }
+
+  // Relation entre le cloud et l'état local : 'newer' | 'older' | 'equal' | 'unknown' | 'none'
+  function cloudRelation(cloud) {
+    if (!cloud || !Array.isArray(cloud.accounts) || cloud.accounts.length === 0) return 'none';
+    if (!stateHasContent(state)) return 'newer';   // local vide (ex. téléphone) → le cloud gagne
+    const cu = cloud.updatedAt ? Date.parse(cloud.updatedAt) : NaN;
+    const lu = state.updatedAt ? Date.parse(state.updatedAt) : NaN;
+    if (!isNaN(cu) && !isNaN(lu)) {
+      if (cu > lu) return 'newer';
+      if (cu < lu) return 'older';
+      return 'equal';
+    }
+    if (!isNaN(cu) && isNaN(lu)) return 'newer';
+    return 'unknown';   // les deux ont du contenu mais pas d'horodatage fiable → décision manuelle
+  }
+
+  function applyCloud(cloud) {
+    if (!cloud || !Array.isArray(cloud.accounts)) return false;
+    state = normalizeImported(cloud);
+    saveState();
+    render();
+    return true;
+  }
+
+  function setCloudStatus(text, cls, action) {
+    const el = document.getElementById('cloudStatus');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'cloud-status' + (cls ? ' ' + cls : '');
+    el.dataset.action = action || '';
+  }
+
+  function relativeFromIso(iso) {
+    if (!iso) return '';
+    const t = Date.parse(iso);
+    if (isNaN(t)) return '';
+    const mins = Math.floor((Date.now() - t) / 60000);
+    if (mins < 1) return "à l'instant";
+    if (mins < 60) return 'il y a ' + mins + ' min';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return 'il y a ' + hrs + ' h';
+    const days = Math.floor(hrs / 24);
+    return 'il y a ' + days + ' j';
+  }
+
+  // mode : 'auto' (au chargement / focus) ou 'manual' (bouton ↻)
+  async function syncFromCloud(mode) {
+    const btn = document.getElementById('cloudSyncBtn');
+    if (btn) btn.classList.add('spinning');
+    setCloudStatus('☁ …', 'off');
+    try {
+      const cloud = await fetchCloud();
+      lastCloud = cloud;
+      lastCloudFetchAt = Date.now();
+      const rel = cloudRelation(cloud);
+
+      if (rel === 'none') {
+        setCloudStatus('☁ Cloud vide', 'off');
+        if (mode === 'manual') alert('Le Gist est encore vide. Colle des données dedans (ou attends la synchro auto depuis le PC) pour les voir ici.');
+        return;
+      }
+
+      const when = relativeFromIso(cloud.updatedAt);
+
+      if (rel === 'newer') {
+        if (isCloudViewer() || mode === 'manual') {
+          // Appareil afficheur, ou clic manuel : on applique (avec garde-fou si on écrase des données locales)
+          if (mode === 'manual' && stateHasContent(state) &&
+              !confirm('Charger les données du cloud sur cet appareil ? Tes données locales seront remplacées.')) {
+            setCloudStatus('☁ Cloud plus récent · charger', 'new', 'load');
+            return;
+          }
+          applyCloud(cloud);
+          setCloudStatus('☁ À jour' + (when ? ' · ' + when : ''), 'ok');
+        } else {
+          // Appareil éditeur (PC) : on n'écrase jamais en silence, on propose
+          setCloudStatus('☁ Cloud plus récent' + (when ? ' (' + when + ')' : '') + ' · charger', 'new', 'load');
+        }
+      } else if (rel === 'unknown') {
+        if (mode === 'manual' &&
+            confirm('Le cloud diffère de tes données locales mais aucun horodatage ne permet de trancher. Charger le cloud (remplace le local) ?')) {
+          applyCloud(cloud);
+          setCloudStatus('☁ Chargé depuis le cloud', 'ok');
+        } else {
+          setCloudStatus('☁ Cloud différent · charger ?', 'new', 'load');
+        }
+      } else {
+        // older / equal
+        setCloudStatus('☁ Local à jour', 'ok');
+        if (mode === 'manual') alert('Le cloud n\'est pas plus récent que tes données locales — rien à charger.');
+      }
+    } catch (err) {
+      setCloudStatus('☁ Hors ligne', 'off');
+      if (mode === 'manual') alert('Cloud injoignable : ' + err.message);
+    } finally {
+      if (btn) btn.classList.remove('spinning');
+    }
+  }
+
+  function onCloudStatusClick() {
+    const el = document.getElementById('cloudStatus');
+    if (!el || el.dataset.action !== 'load' || !lastCloud) return;
+    if (!stateHasContent(state) ||
+        confirm('Charger les données du cloud sur cet appareil ? Tes données locales seront remplacées.')) {
+      applyCloud(lastCloud);
+      setCloudStatus('☁ À jour' + (lastCloud.updatedAt ? ' · ' + relativeFromIso(lastCloud.updatedAt) : ''), 'ok');
+    }
+  }
+
+  function load() {
+    let loaded = false;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { state = JSON.parse(raw); loaded = true; }
+    } catch (e) {}
+
+    // If we already have v5 data, but old data is still hanging around,
+    // we offer to redo the migration once. This handles the case where the
+    // first migration ran with imperfect detection rules and the user wants
+    // a second try with improved detection.
+    let canRemigrate = false;
+    if (loaded) {
+      for (const oldKey of OLD_KEYS) {
+        if (localStorage.getItem(oldKey)) {
+          canRemigrate = true;
+          break;
+        }
+      }
+    }
+    // Expose a redo function on the window for the prompt button
+    window.__equideowRedoMigration = function () {
+      for (const oldKey of OLD_KEYS) {
+        try {
+          const raw = localStorage.getItem(oldKey);
+          if (raw) {
+            const oldData = JSON.parse(raw);
+            const migrated = migrateOldData(oldData);
+            if (migrated) {
+              state = migrated;
+              saveState();
+              render();
+              alert('✓ Migration relancée. Vérifie tes comptes !');
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+      alert('Aucune donnée ancienne trouvée à migrer.');
+    };
+
+    if (!loaded) {
+      for (const oldKey of OLD_KEYS) {
+        try {
+          const raw = localStorage.getItem(oldKey);
+          if (raw) {
+            const oldData = JSON.parse(raw);
+            const migrated = migrateOldData(oldData);
+            if (migrated) {
+              state = migrated;
+              saveState();
+              loaded = true;
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    try {
+      const rawMeta = localStorage.getItem(META_KEY);
+      if (rawMeta) meta = JSON.parse(rawMeta);
+    } catch (e) {}
+
+    if (!state.accounts || state.accounts.length === 0) {
+      const initial = makeDefaultAccount('Mon compte');
+      state = {
+        accounts: [initial],
+        itemCatalog: makeDefaultCatalog(),
+        activeAccountId: initial.id,
+        activeServer: 'gaia',
+        currentView: 'tasks'
+      };
+      saveState();
+    }
+
+    // Ensure all required fields exist
+    if (!state.itemCatalog || state.itemCatalog.length === 0) {
+      state.itemCatalog = makeDefaultCatalog();
+    }
+    state.accounts.forEach(acc => {
+      if (!acc.servers) acc.servers = {};
+      SERVERS.forEach(s => {
+        if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
+        const sd = acc.servers[s];
+        if (!sd.tasks) sd.tasks = [];
+        if (!sd.quantities) sd.quantities = {};
+        if (!sd.buses) sd.buses = makeDefaultBuses();
+        if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
+        if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
+        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+      });
+    });
+    if (!state.currentView) state.currentView = 'tasks';
+    if (!state.activeServer || !SERVERS.includes(state.activeServer)) state.activeServer = 'gaia';
+    // activeAccountId can be the special ALL_ACCOUNTS_ID for the aggregated view
+    const isValidActive = state.activeAccountId === ALL_ACCOUNTS_ID ||
+      (state.activeAccountId && state.accounts.find(a => a.id === state.activeAccountId));
+    if (!isValidActive) {
+      state.activeAccountId = state.accounts[0]?.id || null;
+    }
+    // Drop the aggregated view if we have less than 2 accounts (it wouldn't render)
+    if (state.activeAccountId === ALL_ACCOUNTS_ID && state.accounts.length < 2) {
+      state.activeAccountId = state.accounts[0]?.id || null;
+    }
+
+    processWeeklyResets();
+    saveState();
+    render();
+    setTimeout(checkBackupReminder, 500);
+
+    // If we already had v5 data but old data is still around, offer a re-migration
+    if (canRemigrate) {
+      showRemigrationBanner();
+    }
+
+    // Lecture du cloud (asynchrone, ne bloque pas l'affichage local)
+    document.getElementById('cloudViewerToggle').checked = isCloudViewer();
+    syncFromCloud('auto');
+  }
+
+  function showRemigrationBanner() {
+    // Avoid stacking multiple banners
+    if (document.getElementById('remigrationBanner')) return;
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
+    const banner = document.createElement('div');
+    banner.id = 'remigrationBanner';
+    banner.style.cssText = `
+      background: var(--warning-bg); color: var(--warning);
+      padding: 12px 16px; border-radius: var(--radius);
+      margin-bottom: 1rem; font-size: 13px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+      border: 1px solid var(--warning);
+    `;
+    banner.innerHTML = `
+      <span>🔄 D'anciennes données sont encore disponibles. Si la migration de tes comptes ne s'est pas bien faite, tu peux la relancer.</span>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" id="remigrateBtn">Relancer la migration</button>
+        <button class="btn" id="dismissMigrationBtn">Ignorer</button>
+      </div>
+    `;
+    // Insert at the top of main-content
+    mainContent.insertBefore(banner, mainContent.firstChild);
+
+    document.getElementById('remigrateBtn').onclick = () => {
+      if (confirm('Cela va remplacer tes données actuelles par une nouvelle migration depuis l\'ancienne version. Continuer ?')) {
+        window.__equideowRedoMigration();
+        banner.remove();
+      }
+    };
+    document.getElementById('dismissMigrationBtn').onclick = () => {
+      // Mark as dismissed so it doesn't reappear on every load
+      try { localStorage.setItem('equideow-migration-dismissed', '1'); } catch (e) {}
+      banner.remove();
+    };
+
+    // Don't show if previously dismissed
+    try {
+      if (localStorage.getItem('equideow-migration-dismissed') === '1') {
+        banner.remove();
+      }
+    } catch (e) {}
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.error('Save error:', e); }
+  }
+
+  function saveMeta() {
+    try { localStorage.setItem(META_KEY, JSON.stringify(meta)); }
+    catch (e) {}
+  }
+
+  function recordChange() {
+    state.updatedAt = new Date().toISOString();  // marque cet appareil comme « éditeur récent »
+    saveState();
+    meta.changesSinceBackup = (meta.changesSinceBackup || 0) + 1;
+    saveMeta();
+    renderBackupStatus();
+    if (meta.changesSinceBackup >= CHANGES_BEFORE_BACKUP &&
+        meta.changesSinceBackup % CHANGES_BEFORE_BACKUP === 0 &&
+        !isBackupSnoozed()) {
+      promptBackup('count');
+    }
+  }
+
+  function daysSinceBackup() {
+    if (!meta.lastBackupAt) return null;
+    const diff = Date.now() - new Date(meta.lastBackupAt).getTime();
+    return Math.floor(diff / (1000*60*60*24));
+  }
+
+  // Returns true if the user asked to be left alone about backups until later
+  function isBackupSnoozed() {
+    if (!meta.snoozeUntil) return false;
+    const snoozeDate = new Date(meta.snoozeUntil);
+    if (isNaN(snoozeDate.getTime())) return false;
+    return Date.now() < snoozeDate.getTime();
+  }
+
+  function snoozeBackupUntilTomorrow() {
+    // Snooze until tomorrow at 4am local time — that way "tomorrow morning"
+    // you get the reminder back, even if you're using the app very late at night.
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(4, 0, 0, 0);
+    meta.snoozeUntil = tomorrow.toISOString();
+    saveMeta();
+    renderBackupStatus();
+  }
+
+  function checkBackupReminder() {
+    if (isBackupSnoozed()) return;
+    const days = daysSinceBackup();
+    if (days === null && meta.changesSinceBackup > 0) {
+      promptBackup('never');
+    } else if (days !== null && days >= DAYS_BEFORE_BACKUP_REMINDER && meta.changesSinceBackup > 0) {
+      promptBackup('time', days);
+    }
+  }
+
+  function promptBackup(reason, days) {
+    let title, message;
+    if (reason === 'count') {
+      title = '💾 C\'est le moment de sauvegarder';
+      message = `Tu as fait ${meta.changesSinceBackup} modifications depuis ta dernière sauvegarde. Télécharger une sauvegarde maintenant ?`;
+    } else if (reason === 'never') {
+      title = '💾 Première sauvegarde';
+      message = 'Tu n\'as encore jamais sauvegardé tes données. Si tu vides le cache de ton navigateur, tu perdras tout. On en télécharge une maintenant ?';
+    } else {
+      title = '💾 Sauvegarde recommandée';
+      message = `Ta dernière sauvegarde date d'il y a ${days} jours. On en fait une nouvelle ?`;
+    }
+    showCustomModal(title, message, [
+      { label: 'Plus tard', cls: '', action: () => { renderBackupStatus(); }},
+      { label: 'Pas avant demain', cls: '', action: () => { snoozeBackupUntilTomorrow(); }},
+      { label: '💾 Sauvegarder', cls: 'success', action: () => exportData() }
+    ]);
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'equideow-tasks-' + todayStr() + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    meta.lastBackupAt = new Date().toISOString();
+    meta.changesSinceBackup = 0;
+    saveMeta();
+    renderBackupStatus();
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.accounts || !Array.isArray(data.accounts)) {
+          alert('Fichier invalide.');
+          return;
+        }
+        if (!confirm('Cela va remplacer tes données actuelles. Continuer ?')) return;
+
+        let imported = data;
+        // Detect old format (no .servers on accounts) and migrate
+        const isOldFormat = data.accounts.some(a => !a.servers);
+        if (isOldFormat) {
+          const migrated = migrateOldData(data);
+          if (migrated) imported = migrated;
+        }
+
+        // Sanity-fill missing fields
+        if (!imported.itemCatalog || imported.itemCatalog.length === 0) {
+          imported.itemCatalog = makeDefaultCatalog();
+        }
+        imported.accounts.forEach(acc => {
+          if (!acc.servers) acc.servers = {};
+          SERVERS.forEach(s => {
+            if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
+            const sd = acc.servers[s];
+            if (!sd.tasks) sd.tasks = [];
+            if (!sd.quantities) sd.quantities = {};
+            if (!sd.buses) sd.buses = makeDefaultBuses();
+            if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
+            if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
+        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+          });
+        });
+        if (!imported.currentView) imported.currentView = 'tasks';
+        if (!imported.activeServer) imported.activeServer = 'gaia';
+        if (!imported.activeAccountId) imported.activeAccountId = imported.accounts[0]?.id || null;
+
+        state = imported;
+        saveState();
+        meta.lastBackupAt = new Date().toISOString();
+        meta.changesSinceBackup = 0;
+        saveMeta();
+        render();
+      } catch (err) {
+        alert('Erreur de lecture du fichier : ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ============================================================
+  // RECURRING TASK PROCESSING
+  // ============================================================
+  function processRecurring() {
+    const today = todayStr();
+    let changed = false;
+    state.accounts.forEach(acc => {
+      SERVERS.forEach(s => {
+        acc.servers[s].tasks.forEach(t => {
+          if (t.recurring === 'daily' && t.done && t.completedAt !== today) {
+            t.done = false; changed = true;
+          }
+          if (t.recurring === 'weekly' && t.done && t.completedAt) {
+            const completedDate = new Date(t.completedAt);
+            const now = new Date(today);
+            const diffDays = Math.floor((now - completedDate) / (1000*60*60*24));
+            if (diffDays >= 7) { t.done = false; changed = true; }
+          }
+        });
+      });
+    });
+    if (changed) saveState();
+  }
+
+  function processWeeklyResets() {
+    const currentWeek = getCurrentWeekKey();
+    let changed = false;
+    state.accounts.forEach(acc => {
+      SERVERS.forEach(s => {
+        const sd = acc.servers[s];
+        if (!sd.exchanges) { sd.exchanges = makeDefaultExchanges(); changed = true; return; }
+        if (sd.exchanges.lastResetWeekKey !== currentWeek) {
+          sd.exchanges.count = 0;
+          sd.exchanges.lastResetWeekKey = currentWeek;
+          changed = true;
+        }
+      });
+    });
+    if (changed) saveState();
+  }
+
+  // ============================================================
+  // RENDERING
+  // ============================================================
+  function render() {
+    processRecurring();
+    processWeeklyResets();
+    renderAccountTabs();
+    renderServerTabs();
+    renderViewTabs();
+    renderPanel();
+    renderBackupStatus();
+  }
+
+  function renderBackupStatus() {
+    const el = document.getElementById('backupStatus');
+    if (!el) return;
+    const days = daysSinceBackup();
+    const changes = meta.changesSinceBackup || 0;
+    const snoozed = isBackupSnoozed();
+
+    if (changes === 0 && days !== null && days < 2) {
+      el.className = 'backup-status';
+      el.textContent = '✓ Sauvegardé';
+    } else if (changes > 0 && (days === null || days >= DAYS_BEFORE_BACKUP_REMINDER)) {
+      el.className = 'backup-status danger';
+      el.textContent = '⚠ Non sauvegardé (' + changes + ' modifs)';
+    } else if (changes > 0) {
+      el.className = 'backup-status warn';
+      el.textContent = changes + ' modifs depuis sauvegarde';
+    } else if (days !== null) {
+      el.className = 'backup-status';
+      el.textContent = '✓ Sauvegardé il y a ' + days + ' j';
+    } else {
+      el.className = 'backup-status warn';
+      el.textContent = '⚠ Jamais sauvegardé';
+    }
+
+    // Append a small "snoozed" indicator if reminders are paused
+    if (snoozed) {
+      el.textContent += ' · 😴 rappels en pause';
+      el.title = 'Les rappels automatiques sont désactivés jusqu\'à demain matin. Tu peux toujours sauvegarder manuellement.';
+    } else {
+      el.title = '';
+    }
+  }
+
+  function countRemindersForServerData(sd) {
+    const today = todayStr();
+    let overdue = 0, todayCount = 0;
+    sd.tasks.forEach(t => {
+      if (t.done || !t.date) return;
+      if (t.date < today) overdue++;
+      else if (t.date === today) todayCount++;
+    });
+    return { overdue, today: todayCount };
+  }
+
+  function countRemindersForAccount(acc) {
+    let overdue = 0, todayCount = 0;
+    SERVERS.forEach(s => {
+      const c = countRemindersForServerData(acc.servers[s]);
+      overdue += c.overdue;
+      todayCount += c.today;
+    });
+    return { overdue, today: todayCount };
+  }
+
+  function makeReminderBadges(counts, tooltipPrefix) {
+    const out = [];
+    if (counts.overdue > 0) {
+      const b = document.createElement('span');
+      b.className = 'account-badge overdue';
+      b.textContent = counts.overdue;
+      b.title = tooltipPrefix + counts.overdue + ' tâche(s) en retard';
+      out.push(b);
+    }
+    if (counts.today > 0) {
+      const b = document.createElement('span');
+      b.className = 'account-badge today';
+      b.textContent = counts.today;
+      b.title = tooltipPrefix + counts.today + " tâche(s) pour aujourd'hui";
+      out.push(b);
+    }
+    return out;
+  }
+
+  // Returns a status descriptor for the bus goal on one (account, server):
+  //   { status: 'reached' | 'almost' | 'pending', total, percent }
+  // The goal tracks Repro only (the other fields are storage, not breeding capacity).
+  function busesGoalStatus(serverData) {
+    if (!serverData || !serverData.buses) return { status: 'pending', total: 0, percent: 0 };
+    const total = serverData.buses.repro || 0;
+    const percent = Math.min(100, Math.round((total / BUSES_GOAL_TOTAL) * 100));
+    let status;
+    if (total >= BUSES_GOAL_TOTAL) status = 'reached';
+    else if (total >= BUSES_GOAL_WARN) status = 'almost';
+    else status = 'pending';
+    return { status, total, percent };
+  }
+
+  function makeGoalBadge(tooltip, status) {
+    const b = document.createElement('span');
+    b.className = 'account-badge goal' + (status === 'almost' ? ' almost' : '');
+    b.textContent = status === 'almost' ? '◐' : '✓';
+    b.title = tooltip;
+    return b;
+  }
+
+  function accountAllGoalsReached(acc) {
+    return SERVERS.every(s => busesGoalStatus(acc.servers[s]).status === 'reached');
+  }
+
+  function accountAllGoalsAlmostOrReached(acc) {
+    return SERVERS.every(s => {
+      const st = busesGoalStatus(acc.servers[s]).status;
+      return st === 'reached' || st === 'almost';
+    });
+  }
+
+  function renderAccountTabs() {
+    const bar = document.getElementById('accountsBar');
+    bar.innerHTML = '';
+    const sortedAccounts = state.accounts.slice().sort((a, b) =>
+      a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+    );
+    sortedAccounts.forEach(acc => {
+      const btn = document.createElement('button');
+      btn.className = 'account-tab' + (acc.id === state.activeAccountId ? ' active' : '');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = acc.name;
+      btn.appendChild(nameSpan);
+
+      const counts = countRemindersForAccount(acc);
+      makeReminderBadges(counts, '').forEach(b => btn.appendChild(b));
+
+      // Show a check on the account when both servers' goals are at least
+      // "almost reached". Green ✓ if both reached, orange ◐ if at least one
+      // is only "almost".
+      if (accountAllGoalsReached(acc)) {
+        btn.appendChild(makeGoalBadge('Objectif Repro atteint sur les deux serveurs (≥' + BUSES_GOAL_TOTAL + ' chacune)', 'reached'));
+      } else if (accountAllGoalsAlmostOrReached(acc)) {
+        btn.appendChild(makeGoalBadge('Objectif Repro presque atteint sur les deux serveurs (≥' + BUSES_GOAL_WARN + ' chacune)', 'almost'));
+      }
+
+      btn.onclick = () => {
+        state.activeAccountId = acc.id;
+        // Coming back from "Tous les comptes" — make sure the view is one that
+        // makes sense for a real account (any view does, no change needed)
+        inventorySortSnapshot = null;
+        snapshotForKey = null;
+        saveState();
+        render();
+      };
+      bar.appendChild(btn);
+    });
+
+    // "Tous les comptes" virtual tab — read-only aggregated inventory view.
+    // Only shown when there are at least two real accounts (otherwise
+    // identical to just looking at the one account).
+    if (state.accounts.length >= 2) {
+      // Small separator before the aggregated tab for visual grouping
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height: 1px; background: var(--border); margin: 6px 4px;';
+      bar.appendChild(sep);
+
+      const allBtn = document.createElement('button');
+      allBtn.className = 'account-tab' + (isAllAccountsView() ? ' active' : '');
+      const span = document.createElement('span');
+      span.textContent = '🌐 Tous les comptes';
+      allBtn.appendChild(span);
+      allBtn.title = 'Vue agrégée sur tous les comptes (lecture seule)';
+      allBtn.onclick = () => {
+        state.activeAccountId = ALL_ACCOUNTS_ID;
+        // Aggregated view supports inventory and buses; keep current view if
+        // it's one of those, otherwise default to inventory
+        if (state.currentView !== 'inventory' && state.currentView !== 'buses') {
+          state.currentView = 'inventory';
+        }
+        inventorySortSnapshot = null;
+        snapshotForKey = null;
+        saveState();
+        render();
+      };
+      bar.appendChild(allBtn);
+    }
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-account-btn';
+    addBtn.textContent = '+ Ajouter un compte';
+    addBtn.onclick = promptAddAccount;
+    bar.appendChild(addBtn);
+  }
+
+  function renderServerTabs() {
+    const bar = document.getElementById('serverBar');
+    bar.innerHTML = '';
+    // Server tabs work in aggregated mode too — they switch which server's
+    // totals you're looking at
+    const isAll = isAllAccountsView();
+    if (!isAll && !getActiveAccount()) return;
+
+    const label = document.createElement('span');
+    label.className = 'server-bar-label';
+    label.textContent = 'Serveur :';
+    bar.appendChild(label);
+
+    SERVERS.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'server-tab' + (state.activeServer === s ? ' active' : '');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = SERVER_LABELS[s];
+      btn.appendChild(nameSpan);
+
+      // No reminder counts in aggregated view (we don't show tasks there)
+      if (!isAll) {
+        const acc = getActiveAccount();
+        const counts = countRemindersForServerData(acc.servers[s]);
+        makeReminderBadges(counts, SERVER_LABELS[s] + ' : ').forEach(b => btn.appendChild(b));
+
+        // Goal badge for this server: green if reached, orange if almost
+        const status = busesGoalStatus(acc.servers[s]);
+        if (status.status === 'reached') {
+          btn.appendChild(makeGoalBadge('Objectif Repro atteint sur ' + SERVER_LABELS[s] + ' (' + status.total + '/' + BUSES_GOAL_TOTAL + ')', 'reached'));
+        } else if (status.status === 'almost') {
+          btn.appendChild(makeGoalBadge('Objectif Repro presque atteint sur ' + SERVER_LABELS[s] + ' (' + status.total + '/' + BUSES_GOAL_TOTAL + ')', 'almost'));
+        }
+      }
+
+      btn.onclick = () => {
+        state.activeServer = s;
+        inventorySortSnapshot = null;
+        snapshotForKey = null;
+        saveState();
+        render();
+      };
+      bar.appendChild(btn);
+    });
+  }
+
+  function renderViewTabs() {
+    const isAll = isAllAccountsView();
+    document.querySelectorAll('.view-tab').forEach(t => {
+      // In aggregated mode, inventory and buses are both enabled (read-only),
+      // but tasks isn't meaningful
+      const view = t.dataset.view;
+      const allowedInAll = view === 'inventory' || view === 'buses';
+      t.disabled = isAll && !allowedInAll;
+      t.style.opacity = (isAll && !allowedInAll) ? '0.35' : '';
+      t.style.cursor = (isAll && !allowedInAll) ? 'not-allowed' : 'pointer';
+      t.classList.toggle('active', view === state.currentView);
+      t.onclick = () => {
+        if (isAll && !allowedInAll) return;
+        state.currentView = view;
+        inventorySortSnapshot = null;
+        snapshotForKey = null;
+        saveState();
+        render();
+      };
+    });
+  }
+
+  function renderPanel() {
+    if (isAllAccountsView()) {
+      // The aggregated view supports inventory and buses (read-only)
+      if (state.currentView === 'buses') {
+        renderAggregatedBusesPanel();
+      } else {
+        // Default to inventory if currentView is anything else (e.g. tasks)
+        renderAggregatedInventoryPanel();
+      }
+      return;
+    }
+    if (state.currentView === 'inventory') {
+      renderInventoryPanel();
+    } else if (state.currentView === 'buses') {
+      renderBusesPanel();
+    } else {
+      renderTasksPanel();
+    }
+  }
+
+  function panelHeaderHtml(acc) {
+    return `
+      <div class="panel-header">
+        <h2 class="panel-title">
+          ${escapeHtml(acc.name)}
+          <span class="panel-subtitle">${escapeHtml(SERVER_LABELS[state.activeServer])}</span>
+        </h2>
+        <div class="panel-actions">
+          <button class="btn" id="renameBtn">Renommer</button>
+          <button class="btn danger" id="deleteAccBtn">Supprimer ce compte</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // TASKS PANEL
+  // ============================================================
+  function renderTasksPanel() {
+    const panel = document.getElementById('mainPanel');
+    const acc = getActiveAccount();
+    if (!acc) {
+      panel.innerHTML = '<div class="panel"><div class="empty">Aucun compte. Ajoute ton premier compte ci-dessus.</div></div>';
+      return;
+    }
+    const sd = getActiveServerData();
+    const total = sd.tasks.length;
+    const done = sd.tasks.filter(t => t.done).length;
+    const overdue = sd.tasks.filter(t => !t.done && t.date && t.date < todayStr()).length;
+    const todayCount = sd.tasks.filter(t => !t.done && t.date === todayStr()).length;
+
+    const reminders = sd.tasks
+      .filter(t => !t.done && t.date && t.date <= todayStr())
+      .sort((a,b) => a.date.localeCompare(b.date));
+
+    panel.innerHTML = `
+      <div class="panel">
+        ${panelHeaderHtml(acc)}
+
+        <div class="stats">
+          <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div></div>
+          <div class="stat-card"><div class="stat-label">Faites</div><div class="stat-value">${done}</div></div>
+          <div class="stat-card"><div class="stat-label">Aujourd'hui</div><div class="stat-value">${todayCount}</div></div>
+          <div class="stat-card"><div class="stat-label">En retard</div><div class="stat-value">${overdue}</div></div>
+        </div>
+
+        ${reminders.length > 0 ? `
+          <div class="reminders-section">
+            <p class="reminders-title">🔔 Rappels</p>
+            ${reminders.map(t => `<div class="reminder-item">• ${escapeHtml(t.text)} ${t.date < todayStr() ? '(en retard du ' + formatDate(t.date) + ')' : "(aujourd'hui)"}</div>`).join('')}
+          </div>
+        ` : ''}
+
+        <div class="add-task-row">
+          <input type="text" id="newTaskText" placeholder="Nouvelle tâche...">
+          <input type="date" id="newTaskDate">
+          <select id="newTaskRecurring">
+            <option value="">Ponctuelle</option>
+            <option value="daily">Quotidienne</option>
+            <option value="weekly">Hebdomadaire</option>
+          </select>
+          <button class="btn primary" id="addTaskBtn">Ajouter</button>
+        </div>
+
+        <div class="filter-bar">
+          <span style="color: var(--text-muted);">Afficher:</span>
+          <button class="filter-btn ${currentFilter==='all'?'active':''}" data-f="all">Toutes</button>
+          <button class="filter-btn ${currentFilter==='todo'?'active':''}" data-f="todo">À faire</button>
+          <button class="filter-btn ${currentFilter==='done'?'active':''}" data-f="done">Faites</button>
+        </div>
+
+        <ul class="task-list" id="taskList"></ul>
+      </div>
+    `;
+
+    document.getElementById('renameBtn').onclick = () => promptRenameAccount(acc);
+    document.getElementById('deleteAccBtn').onclick = () => confirmDeleteAccount(acc);
+    document.getElementById('addTaskBtn').onclick = addTask;
+    document.getElementById('newTaskText').onkeydown = (e) => { if (e.key === 'Enter') addTask(); };
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.onclick = () => { currentFilter = b.dataset.f; renderPanel(); };
+    });
+
+    renderTaskList(sd);
+  }
+
+  function renderTaskList(sd) {
+    const list = document.getElementById('taskList');
+    let tasks = sd.tasks.slice();
+    if (currentFilter === 'todo') tasks = tasks.filter(t => !t.done);
+    if (currentFilter === 'done') tasks = tasks.filter(t => t.done);
+
+    tasks.sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      if (a.date && b.date) return a.date.localeCompare(b.date);
+      if (a.date) return -1;
+      if (b.date) return 1;
+      return 0;
+    });
+
+    if (tasks.length === 0) {
+      list.innerHTML = '<div class="empty">Aucune tâche pour ce filtre.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    tasks.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'task-item';
+      const badge = getDateBadge(t.date);
+      li.innerHTML = `
+        <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}">
+        <div class="task-text ${t.done ? 'done' : ''}">${escapeHtml(t.text)}</div>
+        <div class="task-meta">
+          ${badge ? `<span class="badge badge-date ${badge.cls}">${badge.label}</span>` : ''}
+          ${t.recurring ? `<span class="badge badge-recurring">${t.recurring === 'daily' ? 'Quotidien' : 'Hebdo'}</span>` : ''}
+          <button class="delete-task" data-del="${t.id}" aria-label="Supprimer">×</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+
+    list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.onchange = () => toggleTask(cb.dataset.id, cb.checked);
+    });
+    list.querySelectorAll('[data-del]').forEach(btn => {
+      btn.onclick = () => deleteTask(btn.dataset.del);
+    });
+  }
+
+  function addTask() {
+    const text = document.getElementById('newTaskText').value.trim();
+    if (!text) return;
+    const date = document.getElementById('newTaskDate').value || null;
+    const recurring = document.getElementById('newTaskRecurring').value || null;
+    const sd = getActiveServerData();
+    sd.tasks.push({ id: uid(), text, date, recurring, done: false, completedAt: null });
+    document.getElementById('newTaskText').value = '';
+    document.getElementById('newTaskDate').value = '';
+    document.getElementById('newTaskRecurring').value = '';
+    recordChange();
+    renderPanel();
+    renderAccountTabs();
+    renderServerTabs();
+  }
+
+  function toggleTask(id, checked) {
+    const sd = getActiveServerData();
+    const t = sd.tasks.find(x => x.id === id);
+    if (!t) return;
+    t.done = checked;
+    t.completedAt = checked ? todayStr() : null;
+    recordChange();
+    renderPanel();
+    renderAccountTabs();
+    renderServerTabs();
+  }
+
+  function deleteTask(id) {
+    const sd = getActiveServerData();
+    sd.tasks = sd.tasks.filter(x => x.id !== id);
+    recordChange();
+    renderPanel();
+    renderAccountTabs();
+    renderServerTabs();
+  }
+
+  // ============================================================
+  // INVENTORY PANEL
+  // ============================================================
+  // qtyGetter: function(itemId) -> number. Lets this snapshot work for both
+  // per-account views (using a server-data object) and the aggregated view.
+  function buildInventorySnapshotWith(qtyGetter) {
+    const snap = {};
+    state.itemCatalog.forEach(item => {
+      const q = qtyGetter(item.id);
+      snap[item.id] = { wasInStock: q > 0, qtyAtSnapshot: q };
+    });
+    return snap;
+  }
+
+  function buildInventorySnapshot(sd) {
+    return buildInventorySnapshotWith(id => getQty(sd, id));
+  }
+
+  function renderInventoryPanel() {
+    const panel = document.getElementById('mainPanel');
+    const acc = getActiveAccount();
+    if (!acc) {
+      panel.innerHTML = '<div class="panel"><div class="empty">Aucun compte.</div></div>';
+      return;
+    }
+    const sd = getActiveServerData();
+    const key = acc.id + '|' + state.activeServer;
+    if (!inventorySortSnapshot || snapshotForKey !== key) {
+      inventorySortSnapshot = buildInventorySnapshot(sd);
+      snapshotForKey = key;
+    }
+
+    const inStockCount = state.itemCatalog.filter(item => getQty(sd, item.id) > 0).length;
+    const totalQty = state.itemCatalog.reduce(
+      (s, item) => itemCountsInTotal(item) ? s + getQty(sd, item.id) : s,
+      0
+    );
+    const distinctTypes = state.itemCatalog.length;
+
+    const categoryOptions = CATEGORIES.map(c => `<option value="${c.id}">${escapeHtml(c.label)}</option>`).join('');
+
+    panel.innerHTML = `
+      <div class="panel">
+        ${panelHeaderHtml(acc)}
+
+        <div class="exchanges-card">
+          <div class="exchanges-info">
+            <span class="exchanges-label">🔄 Échanges</span>
+            <span class="exchanges-reset-info" id="exchangesResetInfo">${formatResetInfo()}</span>
+          </div>
+          <div class="exchanges-controls">
+            <button class="exchanges-btn" id="exchangesDecBtn" aria-label="Retirer un échange">−</button>
+            <span class="exchanges-value" id="exchangesValue">${sd.exchanges.count}/${EXCHANGES_MAX}</span>
+            <button class="exchanges-btn" id="exchangesIncBtn" aria-label="Ajouter un échange">+</button>
+          </div>
+        </div>
+
+        <div class="inv-shared-note">
+          ℹ️ La liste des objets est partagée entre tous les comptes et serveurs. Les quantités affichées sont celles de ${escapeHtml(acc.name)} — ${escapeHtml(SERVER_LABELS[state.activeServer])}. Le tri s'actualise quand tu changes d'onglet, de compte ou de serveur.
+        </div>
+
+        <div class="inv-updated-at ${sd.inventoryUpdatedAt ? '' : 'never'}" id="invUpdatedAt"
+             title="${sd.inventoryUpdatedAt ? escapeHtml(new Date(sd.inventoryUpdatedAt).toLocaleString('fr-FR')) : ''}">
+          ${sd.inventoryUpdatedAt ? 'Mis à jour ' + escapeHtml(formatInventoryUpdated(sd.inventoryUpdatedAt)) : 'Jamais mis à jour'}
+        </div>
+
+        <div class="inv-summary">
+          <div class="stat-card"><div class="stat-label">Types en stock</div><div class="stat-value" id="invStatInStock">${inStockCount}</div></div>
+          <div class="stat-card"><div class="stat-label">Total d'objets</div><div class="stat-value" id="invStatTotalQty">${totalQty}</div></div>
+          <div class="stat-card"><div class="stat-label">Objets référencés</div><div class="stat-value">${distinctTypes}</div></div>
+        </div>
+
+        <div class="inv-add-row">
+          <input type="text" id="newItemName" placeholder="Nom du nouvel objet...">
+          <select id="newItemCategory">${categoryOptions}</select>
+          <button class="btn primary" id="addItemBtn">Ajouter</button>
+          <button class="btn" id="importMNBtn" title="Importer un fichier JSON exporté depuis le marché noir du jeu">📥 Importer depuis le jeu</button>
+          <input type="file" id="importMNFile" accept=".json" style="display:none;">
+        </div>
+
+        <input type="text" class="inv-search" id="invSearch" placeholder="🔍 Rechercher un objet...">
+        ${renderInvFilterBarHtml()}
+
+        <div id="invContent"></div>
+      </div>
+    `;
+
+    document.getElementById('renameBtn').onclick = () => promptRenameAccount(acc);
+    document.getElementById('deleteAccBtn').onclick = () => confirmDeleteAccount(acc);
+    document.getElementById('addItemBtn').onclick = addCatalogItem;
+    document.getElementById('newItemName').onkeydown = (e) => { if (e.key === 'Enter') addCatalogItem(); };
+    document.getElementById('importMNBtn').onclick = () => document.getElementById('importMNFile').click();
+    document.getElementById('importMNFile').onchange = (e) => {
+      if (e.target.files[0]) importMNInventoryFromFile(e.target.files[0]);
+      e.target.value = '';
+    };
+    document.getElementById('invSearch').oninput = (e) => {
+      inventorySortSnapshot = buildInventorySnapshot(sd);
+      renderInventoryContent(sd, e.target.value);
+    };
+    wireInvFilterBar(() => renderInventoryPanel());
+
+    document.getElementById('exchangesDecBtn').onclick = () => changeExchanges(-1);
+    document.getElementById('exchangesIncBtn').onclick = () => changeExchanges(1);
+    updateExchangesUI();
+
+    renderInventoryContent(sd, '');
+  }
+
+  // ============================================================
+  // AGGREGATED INVENTORY PANEL ("Tous les comptes" — read-only)
+  // ============================================================
+  function renderAggregatedInventoryPanel() {
+    const panel = document.getElementById('mainPanel');
+    if (state.accounts.length === 0) {
+      panel.innerHTML = '<div class="panel"><div class="empty">Aucun compte.</div></div>';
+      return;
+    }
+
+    // Refresh snapshot when entering the view / switching server
+    const key = ALL_ACCOUNTS_ID + '|' + state.activeServer;
+    if (!inventorySortSnapshot || snapshotForKey !== key) {
+      inventorySortSnapshot = buildInventorySnapshotWith(id => getAggregatedQty(id));
+      snapshotForKey = key;
+    }
+
+    const inStockCount = state.itemCatalog.filter(item => getAggregatedQty(item.id) > 0).length;
+    const totalQty = state.itemCatalog.reduce(
+      (s, item) => itemCountsInTotal(item) ? s + getAggregatedQty(item.id) : s,
+      0
+    );
+    const distinctTypes = state.itemCatalog.length;
+
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            🌐 Tous les comptes
+            <span class="panel-subtitle">${escapeHtml(SERVER_LABELS[state.activeServer])}</span>
+          </h2>
+        </div>
+
+        <div class="inv-shared-note">
+          ℹ️ Vue agrégée en lecture seule. Les quantités correspondent au total de tes ${state.accounts.length} comptes sur ${escapeHtml(SERVER_LABELS[state.activeServer])}. Survole un objet pour voir la répartition par compte.
+        </div>
+
+        ${(() => {
+          // For the aggregated view, show the OLDEST update time among accounts
+          // that have ever been updated. That way the user knows the "worst case".
+          // Tooltip carries the per-account breakdown.
+          const stamps = state.accounts.map(a => ({
+            name: a.name,
+            iso: a.servers[state.activeServer].inventoryUpdatedAt
+          }));
+          const withStamps = stamps.filter(s => s.iso);
+          if (withStamps.length === 0) {
+            return '<div class="inv-updated-at never">Aucun compte n\'a encore d\'inventaire à jour.</div>';
+          }
+          // Find the oldest
+          withStamps.sort((x, y) => new Date(x.iso) - new Date(y.iso));
+          const oldest = withStamps[0];
+          const breakdown = stamps.slice().sort((x, y) => {
+            // Updated first (most recent first), then never-updated at the end
+            if (!x.iso && !y.iso) return x.name.localeCompare(y.name, 'fr');
+            if (!x.iso) return 1;
+            if (!y.iso) return -1;
+            return new Date(y.iso) - new Date(x.iso);
+          }).map(s => {
+            const label = s.iso ? formatInventoryUpdated(s.iso) : 'jamais';
+            return escapeHtml(s.name) + ' : ' + escapeHtml(label);
+          }).join('\n');
+          return `
+            <div class="inv-updated-at" id="invUpdatedAt"
+                 title="${escapeHtml(breakdown)}">
+              Inventaire le moins récent : ${escapeHtml(oldest.name)} — ${escapeHtml(formatInventoryUpdated(oldest.iso))}
+              ${withStamps.length < state.accounts.length ? '<span style="color: var(--warning); margin-left: 6px;">⚠ ' + (state.accounts.length - withStamps.length) + ' compte(s) jamais à jour</span>' : ''}
+            </div>
+          `;
+        })()}
+
+        <div class="inv-summary">
+          <div class="stat-card"><div class="stat-label">Types en stock</div><div class="stat-value">${inStockCount}</div></div>
+          <div class="stat-card"><div class="stat-label">Total d'objets</div><div class="stat-value">${totalQty}</div></div>
+          <div class="stat-card"><div class="stat-label">Objets référencés</div><div class="stat-value">${distinctTypes}</div></div>
+        </div>
+
+        <input type="text" class="inv-search" id="invSearch" placeholder="🔍 Rechercher un objet...">
+        ${renderInvFilterBarHtml()}
+
+        <div id="invContent"></div>
+      </div>
+    `;
+
+    document.getElementById('invSearch').oninput = (e) => {
+      inventorySortSnapshot = buildInventorySnapshotWith(id => getAggregatedQty(id));
+      renderAggregatedContent(e.target.value);
+    };
+    wireInvFilterBar(() => renderAggregatedInventoryPanel());
+
+    renderAggregatedContent('');
+  }
+
+  function renderAggregatedContent(searchTerm) {
+    const container = document.getElementById('invContent');
+    container.innerHTML = '';
+    const search = (searchTerm || '').toLowerCase().trim();
+
+    let items = state.itemCatalog.slice();
+    if (search) items = items.filter(i => i.name.toLowerCase().includes(search));
+    items = items.filter(item => itemMatchesFilter(item, getAggregatedQty(item.id)));
+
+    const inStockItems = items.filter(item => {
+      const snap = inventorySortSnapshot[item.id];
+      return snap && snap.wasInStock;
+    });
+    const outStockItems = items.filter(item => {
+      const snap = inventorySortSnapshot[item.id];
+      return !snap || !snap.wasInStock;
+    });
+
+    if (inStockItems.length === 0 && outStockItems.length === 0) {
+      container.innerHTML = '<div class="empty">Aucun objet trouvé.</div>';
+      return;
+    }
+
+    if (inStockItems.length > 0) {
+      const h = document.createElement('div');
+      h.className = 'inv-section-header in-stock';
+      h.textContent = `✓ En stock (${inStockItems.length})`;
+      container.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'inv-categories-grid';
+      container.appendChild(grid);
+      renderAggregatedItemsByCategory(grid, inStockItems, true);
+    }
+    if (outStockItems.length > 0) {
+      const h = document.createElement('div');
+      h.className = 'inv-section-header out-stock';
+      h.textContent = `Hors stock (${outStockItems.length})`;
+      container.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'inv-categories-grid';
+      container.appendChild(grid);
+      renderAggregatedItemsByCategory(grid, outStockItems, false);
+    }
+  }
+
+  function renderAggregatedItemsByCategory(container, items, isInStockSection) {
+    // Per-account breakdown for the tooltip in aggregated view: list every
+    // account that holds the item, sorted by qty desc.
+    function aggregatedBreakdownFor(itemId) {
+      const total = getAggregatedQty(itemId);
+      const breakdown = [];
+      state.accounts.forEach(a => {
+        const q = getQty(a.servers[state.activeServer], itemId);
+        if (q > 0) breakdown.push({ name: a.name, qty: q });
+      });
+      breakdown.sort((x, y) => {
+        if (x.qty !== y.qty) return y.qty - x.qty;
+        return x.name.localeCompare(y.name, 'fr');
+      });
+      return { total, breakdown };
+    }
+
+    CATEGORIES.forEach(cat => {
+      let catItems = items.filter(i => i.category === cat.id);
+      if (catItems.length === 0) return;
+
+      catItems.sort((a, b) => {
+        if (isInStockSection) {
+          const qa = inventorySortSnapshot[a.id]?.qtyAtSnapshot || 0;
+          const qb = inventorySortSnapshot[b.id]?.qtyAtSnapshot || 0;
+          if (qa !== qb) return qb - qa;
+        }
+        return a.name.localeCompare(b.name, 'fr');
+      });
+
+      const catDiv = document.createElement('div');
+      catDiv.className = 'inv-category';
+      catDiv.innerHTML = `
+        <div class="inv-category-header">
+          <span>${escapeHtml(cat.label)}</span>
+          <span class="inv-category-count">${catItems.length}</span>
+        </div>
+        <ul class="inv-list"></ul>
+      `;
+      container.appendChild(catDiv);
+
+      const list = catDiv.querySelector('.inv-list');
+      catItems.forEach(item => {
+        const totalQty = getAggregatedQty(item.id);
+        const data = aggregatedBreakdownFor(item.id);
+
+        const li = document.createElement('li');
+        li.className = 'inv-item ' + (totalQty > 0 ? 'in-stock' : 'out');
+
+        // Build the breakdown tooltip
+        const tooltipRows = data.breakdown.map(row =>
+          `<div class="inv-total-tooltip-row">
+            <span class="name">${escapeHtml(row.name)}</span>
+            <span class="qty">${row.qty}</span>
+          </div>`
+        ).join('');
+
+        // The aggregated value itself shows the tooltip on hover
+        const valueWithTooltip = totalQty > 0
+          ? `<div class="inv-other-accounts" tabindex="0" style="font-size: 14px; font-weight: 500; color: var(--text);">
+              ${totalQty}
+              <div class="inv-total-tooltip" role="tooltip">
+                <div class="inv-total-tooltip-header">${escapeHtml(SERVER_LABELS[state.activeServer])} · ${data.breakdown.length} compte(s)</div>
+                ${tooltipRows}
+              </div>
+            </div>`
+          : `<span class="qty-display">${totalQty}</span>`;
+
+        const imgUrl = item.imageUrl || imageUrlForSlug(item.slug);
+        const imgHtml = imgUrl
+          ? `<img class="inv-item-image" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          : '';
+
+        li.innerHTML = `
+          ${imgHtml}
+          <div class="inv-item-name">${escapeHtml(item.name)}</div>
+          <div class="inv-controls">${valueWithTooltip}</div>
+        `;
+        list.appendChild(li);
+      });
+    });
+  }
+
+  // ============================================================
+  // AGGREGATED BUSES PANEL ("Tous les comptes" — read-only)
+  // ============================================================
+  function renderAggregatedBusesPanel() {
+    const panel = document.getElementById('mainPanel');
+    if (state.accounts.length === 0) {
+      panel.innerHTML = '<div class="panel"><div class="empty">Aucun compte.</div></div>';
+      return;
+    }
+
+    // Compute per-account values and totals on the active server
+    const server = state.activeServer;
+    const fields = [
+      { key: 'repro',  label: 'Repro',   isLots: false },
+      { key: 'stockF', label: 'Stock F', isLots: false },
+      { key: 'stockM', label: 'Stock M', isLots: true }  // shown as lots of 200, drop the remainder
+    ];
+
+    function valueFor(account, field) {
+      const raw = account.servers[server].buses[field.key] || 0;
+      // For stockM we report in lots of 200 (drop the remainder, per Lison's spec)
+      return field.isLots ? Math.floor(raw / STOCK_M_LOT_SIZE) : raw;
+    }
+
+    // Per-field totals
+    const totals = {};
+    fields.forEach(f => {
+      totals[f.key] = state.accounts.reduce((sum, a) => sum + valueFor(a, f), 0);
+    });
+
+    // Per-field breakdowns: list of {accountName, value} (only those with > 0),
+    // sorted by value desc
+    function breakdownFor(field) {
+      return state.accounts
+        .map(a => ({ accountName: a.name, value: valueFor(a, field) }))
+        .filter(b => b.value > 0)
+        .sort((x, y) => y.value - x.value || x.accountName.localeCompare(y.accountName, 'fr'));
+    }
+
+    // How many accounts have reached vs almost-reached their goal on this server
+    const goalsReached = state.accounts.filter(a => busesGoalStatus(a.servers[server]).status === 'reached').length;
+    const goalsAlmost = state.accounts.filter(a => busesGoalStatus(a.servers[server]).status === 'almost').length;
+
+    function fieldCardHtml(field) {
+      const total = totals[field.key];
+      const breakdown = breakdownFor(field);
+
+      // Build the per-account tooltip rows (one account per line)
+      const tooltipRows = breakdown.map(row =>
+        `<div class="inv-total-tooltip-row">
+          <span class="name">${escapeHtml(row.accountName)}</span>
+          <span class="qty">${row.value}</span>
+        </div>`
+      ).join('');
+
+      const valueDisplay = field.isLots
+        ? `${total} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">lot${total > 1 ? 's' : ''}</span>`
+        : total;
+
+      const tooltipHtml = breakdown.length > 0
+        ? `<div class="inv-total-tooltip" role="tooltip">
+             <div class="inv-total-tooltip-header">${escapeHtml(SERVER_LABELS[server])} · ${breakdown.length} compte(s)</div>
+             ${tooltipRows}
+           </div>`
+        : '';
+
+      return `
+        <div class="buse-card">
+          <div class="buse-label">${escapeHtml(field.label)}</div>
+          <div class="inv-other-accounts" tabindex="${breakdown.length > 0 ? '0' : '-1'}"
+               style="font-size: 30px; font-weight: 700; color: var(--text-title);
+                      font-family: var(--font-title); display: flex; justify-content: center;
+                      align-items: baseline; height: 60px; cursor: ${breakdown.length > 0 ? 'help' : 'default'};">
+            ${valueDisplay}
+            ${tooltipHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            🌐 Tous les comptes
+            <span class="panel-subtitle">${escapeHtml(SERVER_LABELS[server])}</span>
+          </h2>
+        </div>
+
+        <div class="inv-shared-note">
+          ℹ️ Vue agrégée en lecture seule. Totaux sur tous tes comptes (${state.accounts.length}) pour ${escapeHtml(SERVER_LABELS[server])}.
+          Survole un nombre pour voir la répartition par compte. Stock M est compté en lots de 200, restant ignoré.
+        </div>
+
+        <div class="buses-grid">
+          ${fields.map(fieldCardHtml).join('')}
+        </div>
+
+        <div class="buses-summary">
+          🎯 Objectifs Repro sur ${escapeHtml(SERVER_LABELS[server])} :
+          <strong>${goalsReached} / ${state.accounts.length}</strong> atteint(s)${goalsAlmost > 0 ? ', <strong>' + goalsAlmost + '</strong> presque atteint(s)' : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function updateExchangesUI() {
+    const sd = getActiveServerData();
+    if (!sd || !sd.exchanges) return;
+    const valueEl = document.getElementById('exchangesValue');
+    const decBtn = document.getElementById('exchangesDecBtn');
+    const incBtn = document.getElementById('exchangesIncBtn');
+    if (!valueEl) return;
+    const count = sd.exchanges.count;
+    valueEl.textContent = count + '/' + EXCHANGES_MAX;
+    valueEl.classList.toggle('maxed', count >= EXCHANGES_MAX);
+    valueEl.classList.toggle('empty', count === 0);
+    if (decBtn) decBtn.disabled = count <= 0;
+    if (incBtn) incBtn.disabled = count >= EXCHANGES_MAX;
+  }
+
+  function changeExchanges(delta) {
+    const sd = getActiveServerData();
+    if (!sd) return;
+    if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
+    processWeeklyResets();
+    const newCount = Math.max(0, Math.min(EXCHANGES_MAX, sd.exchanges.count + delta));
+    if (newCount === sd.exchanges.count) return;
+    sd.exchanges.count = newCount;
+    recordChange();
+    updateExchangesUI();
+  }
+
+  // ============================================================
+  // INVENTORY FILTER BAR
+  // ============================================================
+  function renderInvFilterBarHtml() {
+    const filters = [
+      { id: 'all', label: 'Tous' },
+      { id: 'inStock', label: '✓ En stock' },
+      { id: 'outOfStock', label: 'Hors stock' }
+    ];
+    const categoryFilters = CATEGORIES.map(c => ({ id: c.id, label: c.label }));
+
+    const buttons = [...filters, ...categoryFilters].map(f =>
+      `<button class="filter-btn ${inventoryFilter === f.id ? 'active' : ''}" data-inv-filter="${f.id}">${escapeHtml(f.label)}</button>`
+    ).join('');
+
+    return `
+      <div class="inv-filter-bar">
+        <span class="filter-label">Filtrer :</span>
+        ${buttons}
+      </div>
+    `;
+  }
+
+  function wireInvFilterBar(onChange) {
+    document.querySelectorAll('[data-inv-filter]').forEach(btn => {
+      btn.onclick = () => {
+        inventoryFilter = btn.dataset.invFilter;
+        // Re-render just the filter bar's buttons (simpler: re-render whole panel)
+        onChange();
+      };
+    });
+  }
+
+  // Returns true if the item passes the active filter (independent of the
+  // text search; combine the two when filtering).
+  function itemMatchesFilter(item, qty) {
+    if (inventoryFilter === 'all') return true;
+    if (inventoryFilter === 'inStock') return qty > 0;
+    if (inventoryFilter === 'outOfStock') return qty === 0;
+    // Otherwise: category id
+    return item.category === inventoryFilter;
+  }
+
+  function renderInventoryContent(sd, searchTerm) {
+    const container = document.getElementById('invContent');
+    container.innerHTML = '';
+    const search = (searchTerm || '').toLowerCase().trim();
+
+    let items = state.itemCatalog.slice();
+    if (search) items = items.filter(i => i.name.toLowerCase().includes(search));
+    // Apply the dropdown/button filter using current quantities, not the snapshot,
+    // so toggling between "in stock" / "out of stock" reflects what the user sees
+    items = items.filter(item => itemMatchesFilter(item, getQty(sd, item.id)));
+
+    const inStockItems = items.filter(item => {
+      const snap = inventorySortSnapshot[item.id];
+      return snap && snap.wasInStock;
+    });
+    const outStockItems = items.filter(item => {
+      const snap = inventorySortSnapshot[item.id];
+      return !snap || !snap.wasInStock;
+    });
+
+    if (inStockItems.length === 0 && outStockItems.length === 0) {
+      container.innerHTML = '<div class="empty">Aucun objet trouvé.</div>';
+      return;
+    }
+
+    if (inStockItems.length > 0) {
+      const h = document.createElement('div');
+      h.className = 'inv-section-header in-stock';
+      h.textContent = `✓ En stock (${inStockItems.length})`;
+      container.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'inv-categories-grid';
+      container.appendChild(grid);
+      renderItemsByCategory(grid, sd, inStockItems, true);
+    }
+    if (outStockItems.length > 0) {
+      const h = document.createElement('div');
+      h.className = 'inv-section-header out-stock';
+      h.textContent = `Hors stock (${outStockItems.length})`;
+      container.appendChild(h);
+      const grid = document.createElement('div');
+      grid.className = 'inv-categories-grid';
+      container.appendChild(grid);
+      renderItemsByCategory(grid, sd, outStockItems, false);
+    }
+  }
+
+  function renderItemsByCategory(container, sd, items, isInStockSection) {
+    const acc = getActiveAccount();
+
+    // Compute the total quantity of an item across ALL accounts on the
+    // currently active server, plus a per-account breakdown for the tooltip.
+    // Returns null when only the active account has any (the per-account
+    // quantity is already shown, no point repeating).
+    function serverTotalFor(itemId) {
+      let total = 0;
+      let othersHaveIt = false;
+      const breakdown = []; // [{name, qty, isActive}]
+      state.accounts.forEach(a => {
+        const q = getQty(a.servers[state.activeServer], itemId);
+        total += q;
+        if (q > 0) {
+          breakdown.push({ name: a.name, qty: q, isActive: a.id === acc.id });
+          if (a.id !== acc.id) othersHaveIt = true;
+        }
+      });
+      if (!othersHaveIt) return null;
+      // Sort: active account first, then by qty desc, then by name
+      breakdown.sort((x, y) => {
+        if (x.isActive !== y.isActive) return x.isActive ? -1 : 1;
+        if (x.qty !== y.qty) return y.qty - x.qty;
+        return x.name.localeCompare(y.name, 'fr');
+      });
+      return { total, breakdown };
+    }
+
+    CATEGORIES.forEach(cat => {
+      let catItems = items.filter(i => i.category === cat.id);
+      if (catItems.length === 0) return;
+
+      catItems.sort((a, b) => {
+        if (isInStockSection) {
+          const qa = inventorySortSnapshot[a.id]?.qtyAtSnapshot || 0;
+          const qb = inventorySortSnapshot[b.id]?.qtyAtSnapshot || 0;
+          if (qa !== qb) return qb - qa;
+        }
+        return a.name.localeCompare(b.name, 'fr');
+      });
+
+      const catDiv = document.createElement('div');
+      catDiv.className = 'inv-category';
+      catDiv.innerHTML = `
+        <div class="inv-category-header">
+          <span>${escapeHtml(cat.label)}</span>
+          <span class="inv-category-count">${catItems.length}</span>
+        </div>
+        <ul class="inv-list"></ul>
+      `;
+      container.appendChild(catDiv);
+
+      const list = catDiv.querySelector('.inv-list');
+      catItems.forEach(item => {
+        const qty = getQty(sd, item.id);
+        const useFreeInput = isFreeInputItem(item.name);
+        const totalAcrossAccounts = serverTotalFor(item.id);
+
+        const li = document.createElement('li');
+        li.className = 'inv-item ' + (qty > 0 ? 'in-stock' : 'out');
+        li.dataset.itemId = item.id;
+
+        let controlsHtml;
+        if (useFreeInput) {
+          controlsHtml = `
+            <input type="number" min="0" step="1" class="qty-input" data-id="${item.id}" value="${qty}" inputmode="numeric" aria-label="Quantité">
+            <button class="inv-edit" data-edit="${item.id}" aria-label="Éditer cet objet" title="Modifier le nom ou la catégorie">✏️</button>
+            <button class="inv-delete" data-del="${item.id}" aria-label="Supprimer cet objet" title="Retirer de la liste (sur tous les comptes/serveurs)">×</button>
+          `;
+        } else {
+          controlsHtml = `
+            <button class="qty-btn" data-action="dec" data-id="${item.id}" ${qty <= 0 ? 'disabled' : ''} aria-label="Retirer un">−</button>
+            <span class="qty-display" data-display="${item.id}">${qty}</span>
+            <button class="qty-btn" data-action="inc" data-id="${item.id}" aria-label="Ajouter un">+</button>
+            <button class="inv-edit" data-edit="${item.id}" aria-label="Éditer cet objet" title="Modifier le nom ou la catégorie">✏️</button>
+            <button class="inv-delete" data-del="${item.id}" aria-label="Supprimer cet objet" title="Retirer de la liste (sur tous les comptes/serveurs)">×</button>
+          `;
+        }
+
+        let totalHint = '';
+        if (totalAcrossAccounts !== null) {
+          const tooltipRows = totalAcrossAccounts.breakdown.map(row =>
+            `<div class="inv-total-tooltip-row${row.isActive ? ' is-active' : ''}">
+              <span class="name">${escapeHtml(row.name)}</span>
+              <span class="qty">${row.qty}</span>
+            </div>`
+          ).join('');
+          totalHint = `
+            <div class="inv-other-accounts" tabindex="0">
+              ∑ ${totalAcrossAccounts.total}
+              <div class="inv-total-tooltip" role="tooltip">
+                <div class="inv-total-tooltip-header">${escapeHtml(SERVER_LABELS[state.activeServer])} · ${totalAcrossAccounts.breakdown.length} compte(s)</div>
+                ${tooltipRows}
+              </div>
+            </div>
+          `;
+        }
+
+        // Build the optional image tag. We use onerror to hide the img if the
+        // URL is broken, so we don't show a broken-image icon.
+        const imgUrl = item.imageUrl || imageUrlForSlug(item.slug);
+        const imgHtml = imgUrl
+          ? `<img class="inv-item-image" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          : '';
+
+        li.innerHTML = `
+          ${imgHtml}
+          <div class="inv-item-name">${escapeHtml(item.name)}</div>
+          ${totalHint}
+          <div class="inv-controls">${controlsHtml}</div>
+        `;
+        list.appendChild(li);
+      });
+    });
+
+    container.querySelectorAll('[data-action]').forEach(btn => {
+      btn.onclick = () => changeQty(btn.dataset.id, btn.dataset.action === 'inc' ? 1 : -1);
+    });
+    container.querySelectorAll('.qty-input').forEach(input => {
+      input.addEventListener('focus', () => input.select());
+      input.addEventListener('change', () => {
+        let val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        setQty(input.dataset.id, val);
+      });
+    });
+    container.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.onclick = () => promptEditCatalogItem(btn.dataset.edit);
+    });
+    container.querySelectorAll('[data-del]').forEach(btn => {
+      btn.onclick = () => confirmDeleteCatalogItem(btn.dataset.del);
+    });
+  }
+
+  function updateInvSummary(sd) {
+    const inStockCount = state.itemCatalog.filter(item => getQty(sd, item.id) > 0).length;
+    const totalQty = state.itemCatalog.reduce(
+      (s, item) => itemCountsInTotal(item) ? s + getQty(sd, item.id) : s,
+      0
+    );
+    const elIn = document.getElementById('invStatInStock');
+    const elTot = document.getElementById('invStatTotalQty');
+    if (elIn) elIn.textContent = inStockCount;
+    if (elTot) elTot.textContent = totalQty;
+  }
+
+  function updateItemRowVisuals(sd, itemId) {
+    const qty = getQty(sd, itemId);
+    const li = document.querySelector(`.inv-item[data-item-id="${itemId}"]`);
+    if (li) {
+      li.classList.toggle('in-stock', qty > 0);
+      li.classList.toggle('out', qty <= 0);
+    }
+    const display = document.querySelector(`[data-display="${itemId}"]`);
+    if (display) display.textContent = qty;
+    const decBtn = document.querySelector(`.qty-btn[data-action="dec"][data-id="${itemId}"]`);
+    if (decBtn) decBtn.disabled = qty <= 0;
+  }
+
+  function changeQty(itemId, delta) {
+    const sd = getActiveServerData();
+    const current = getQty(sd, itemId);
+    const newQty = Math.max(0, current + delta);
+    if (newQty === current) return;
+    if (newQty === 0) delete sd.quantities[itemId];
+    else sd.quantities[itemId] = newQty;
+    markInventoryUpdated(sd);
+    recordChange();
+    updateItemRowVisuals(sd, itemId);
+    updateInvSummary(sd);
+    updateInventoryTimestamp(sd);
+  }
+
+  function setQty(itemId, value) {
+    const sd = getActiveServerData();
+    const newQty = Math.max(0, Math.floor(value));
+    if (newQty === 0) delete sd.quantities[itemId];
+    else sd.quantities[itemId] = newQty;
+    markInventoryUpdated(sd);
+    recordChange();
+    updateItemRowVisuals(sd, itemId);
+    updateInvSummary(sd);
+    updateInventoryTimestamp(sd);
+  }
+
+  // Refresh the small "last update" line in the panel, without re-rendering
+  // the whole inventory (which would lose scroll position and snapshot).
+  function updateInventoryTimestamp(sd) {
+    const el = document.getElementById('invUpdatedAt');
+    if (!el || !sd) return;
+    const formatted = formatInventoryUpdated(sd.inventoryUpdatedAt);
+    el.textContent = formatted ? 'Mis à jour ' + formatted : 'Jamais mis à jour';
+    el.title = sd.inventoryUpdatedAt
+      ? new Date(sd.inventoryUpdatedAt).toLocaleString('fr-FR')
+      : '';
+  }
+
+  function addCatalogItem() {
+    const nameInput = document.getElementById('newItemName');
+    const categorySelect = document.getElementById('newItemCategory');
+    const name = nameInput.value.trim();
+    if (!name) return;
+    const existing = state.itemCatalog.find(i => i.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      alert('Un objet avec ce nom existe déjà dans la liste partagée.');
+      return;
+    }
+    const newId = uid('item_');
+    state.itemCatalog.push({ id: newId, name, category: categorySelect.value });
+    const sd = getActiveServerData();
+    sd.quantities[newId] = 1;
+    markInventoryUpdated(sd);
+    nameInput.value = '';
+    recordChange();
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    renderInventoryPanel();
+  }
+
+  function promptEditCatalogItem(itemId) {
+    const item = state.itemCatalog.find(i => i.id === itemId);
+    if (!item) return;
+    const c = document.getElementById('modalContainer');
+    const categoryOptions = CATEGORIES
+      .map(cat => `<option value="${cat.id}" ${cat.id === item.category ? 'selected' : ''}>${escapeHtml(cat.label)}</option>`)
+      .join('');
+
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3>✏️ Modifier l'objet</h3>
+          <p style="margin-bottom: 6px;">Nom :</p>
+          <input type="text" id="editItemName" value="${escapeHtml(item.name)}">
+          <p style="margin-bottom: 6px;">Catégorie :</p>
+          <select id="editItemCategory">${categoryOptions}</select>
+          <div class="modal-actions">
+            <button class="btn" id="modalCancel">Annuler</button>
+            <button class="btn primary" id="modalOk">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = () => { c.innerHTML = ''; };
+    const nameInput = document.getElementById('editItemName');
+    nameInput.focus();
+    nameInput.select();
+    document.getElementById('modalCancel').onclick = close;
+    document.getElementById('modalOk').onclick = () => {
+      const newName = nameInput.value.trim();
+      const newCategory = document.getElementById('editItemCategory').value;
+      if (!newName) { alert('Le nom ne peut pas être vide.'); return; }
+      // Check for name collision (case-insensitive, excluding the item itself)
+      const collision = state.itemCatalog.find(i =>
+        i.id !== itemId && i.name.toLowerCase() === newName.toLowerCase()
+      );
+      if (collision) {
+        alert(`Un autre objet s'appelle déjà "${collision.name}" dans la liste. Choisis un autre nom.`);
+        return;
+      }
+      item.name = newName;
+      item.category = newCategory;
+      recordChange();
+      close();
+      inventorySortSnapshot = null;
+      snapshotForKey = null;
+      renderInventoryPanel();
+    };
+    nameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('modalOk').click();
+      if (e.key === 'Escape') close();
+    };
+  }
+
+  function confirmDeleteCatalogItem(itemId) {
+    const item = state.itemCatalog.find(i => i.id === itemId);
+    if (!item) return;
+    const places = [];
+    state.accounts.forEach(a => {
+      SERVERS.forEach(s => {
+        const q = getQty(a.servers[s], itemId);
+        if (q > 0) places.push(a.name + ' / ' + SERVER_LABELS[s] + ' (' + q + ')');
+      });
+    });
+    let message = `Retirer "${item.name}" de la liste partagée ?`;
+    if (places.length > 0) {
+      message += `\n\nAttention : tu as encore en stock sur : ${places.join(', ')}. Ces quantités seront perdues.`;
+    } else {
+      message += '\n\nCet objet sera retiré de tous les comptes/serveurs.';
+    }
+    showConfirm(message, () => {
+      state.itemCatalog = state.itemCatalog.filter(i => i.id !== itemId);
+      state.accounts.forEach(a => {
+        SERVERS.forEach(s => {
+          // Only touch the timestamp on (compte, serveur) that actually had the item
+          if (a.servers[s].quantities[itemId]) {
+            delete a.servers[s].quantities[itemId];
+            markInventoryUpdated(a.servers[s]);
+          }
+        });
+      });
+      recordChange();
+      inventorySortSnapshot = null;
+      snapshotForKey = null;
+      renderInventoryPanel();
+    });
+  }
+
+  function importMNInventoryFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.type !== 'equideow-mn-inventory' || !Array.isArray(data.items)) {
+          alert("Ce fichier ne semble pas être un export d'inventaire MN. Utilise le bouton « 📥 Exporter pour gestionnaire » depuis la page du marché noir du jeu.");
+          return;
+        }
+        promptMNInventoryImport(data);
+      } catch (err) {
+        alert('Erreur de lecture du fichier : ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function promptMNInventoryImport(payload) {
+    const c = document.getElementById('modalContainer');
+    const items = payload.items;
+    const serverHint = payload.server || '';
+    const exportDate = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString('fr-FR') : 'inconnue';
+
+    // Default server in dropdown based on payload
+    let defaultServer = state.activeServer;
+    if (serverHint.toLowerCase() === 'gaïa' || serverHint.toLowerCase() === 'gaia') defaultServer = 'gaia';
+    else if (serverHint.toLowerCase() === 'ouranos') defaultServer = 'ouranos';
+
+    const accountOptions = state.accounts
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+      .map(a => `<option value="${a.id}" ${a.id === state.activeAccountId ? 'selected' : ''}>${escapeHtml(a.name)}</option>`)
+      .join('');
+
+    const serverOptions = SERVERS
+      .map(s => `<option value="${s}" ${s === defaultServer ? 'selected' : ''}>${escapeHtml(SERVER_LABELS[s])}</option>`)
+      .join('');
+
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3>📥 Importer l'inventaire MN</h3>
+          <p>Fichier${serverHint ? ` (serveur ${escapeHtml(serverHint)})` : ''}, exporté le ${escapeHtml(exportDate)}.<br>
+          <strong>${items.length}</strong> objet(s) trouvé(s).</p>
+          <p>Compte de destination :</p>
+          <select id="importTargetAccount">${accountOptions}</select>
+          <p>Serveur de destination :</p>
+          <select id="importTargetServer">${serverOptions}</select>
+          <p style="font-size:12px; color: var(--text-light);">
+            ⚠️ Les quantités actuelles du compte/serveur sélectionné seront <strong>remplacées</strong> par celles du fichier.
+            Les objets non listés dans le fichier passeront à 0.
+            Les objets inconnus du gestionnaire seront automatiquement ajoutés.
+          </p>
+          <div class="modal-actions">
+            <button class="btn" id="modalCancel">Annuler</button>
+            <button class="btn primary" id="modalOk">Importer</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = () => { c.innerHTML = ''; };
+    document.getElementById('modalCancel').onclick = close;
+    document.getElementById('modalOk').onclick = () => {
+      const targetAccountId = document.getElementById('importTargetAccount').value;
+      const targetServer = document.getElementById('importTargetServer').value;
+      close();
+      applyMNInventoryImport(payload, targetAccountId, targetServer);
+    };
+  }
+
+  function applyMNInventoryImport(payload, targetAccountId, targetServer) {
+    const acc = state.accounts.find(a => a.id === targetAccountId);
+    if (!acc || !SERVERS.includes(targetServer)) {
+      alert('Cible introuvable.');
+      return;
+    }
+    const sd = acc.servers[targetServer];
+
+    const slugToCatalogId = new Map();
+    const nameToCatalogId = new Map();
+    state.itemCatalog.forEach(item => {
+      if (item.slug) slugToCatalogId.set(item.slug.toLowerCase(), item.id);
+      nameToCatalogId.set(item.name.toLowerCase(), item.id);
+    });
+
+    let addedItems = 0;
+    let updatedItems = 0;
+    const seenCatalogIds = new Set();
+
+    payload.items.forEach(importedItem => {
+      const lookupName = (importedItem.name || importedItem.rawName || '').trim();
+      const slug = (importedItem.slug || '').trim().toLowerCase();
+      if (!lookupName && !slug) return;
+
+      let catalogId = null;
+      if (slug) catalogId = slugToCatalogId.get(slug);
+      if (!catalogId && lookupName) catalogId = nameToCatalogId.get(lookupName.toLowerCase());
+
+      if (catalogId) {
+        const existing = state.itemCatalog.find(i => i.id === catalogId);
+        if (existing) {
+          // Opportunistically attach slug + image URL for future matching/rendering
+          if (slug && !existing.slug) {
+            existing.slug = slug;
+            slugToCatalogId.set(slug, catalogId);
+          }
+          if (importedItem.imageUrl && !existing.imageUrl) {
+            existing.imageUrl = importedItem.imageUrl;
+          }
+        }
+      } else {
+        catalogId = uid('item_');
+        state.itemCatalog.push({
+          id: catalogId,
+          name: lookupName,
+          category: importedItem.category || 'autres',
+          slug: slug || undefined,
+          imageUrl: importedItem.imageUrl || undefined
+        });
+        if (slug) slugToCatalogId.set(slug, catalogId);
+        nameToCatalogId.set(lookupName.toLowerCase(), catalogId);
+        addedItems++;
+      }
+
+      const qty = Math.max(0, parseInt(importedItem.qty, 10) || 0);
+      if (qty > 0) sd.quantities[catalogId] = qty;
+      else delete sd.quantities[catalogId];
+      seenCatalogIds.add(catalogId);
+      updatedItems++;
+    });
+
+    Object.keys(sd.quantities).forEach(cid => {
+      if (!seenCatalogIds.has(cid)) delete sd.quantities[cid];
+    });
+
+    markInventoryUpdated(sd);
+    recordChange();
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    render();
+
+    let msg = `✓ Inventaire importé sur ${acc.name} / ${SERVER_LABELS[targetServer]}.\n${updatedItems} objet(s) traité(s).`;
+    if (addedItems > 0) msg += `\n${addedItems} nouveau(x) objet(s) ajouté(s) au catalogue.`;
+    alert(msg);
+  }
+
+  // ============================================================
+  // BUSES PANEL
+  // ============================================================
+  function renderBusesPanel() {
+    const panel = document.getElementById('mainPanel');
+    const acc = getActiveAccount();
+    if (!acc) {
+      panel.innerHTML = '<div class="panel"><div class="empty">Aucun compte.</div></div>';
+      return;
+    }
+    const sd = getActiveServerData();
+    const buses = sd.buses;
+    const lots = Math.floor((buses.stockM || 0) / STOCK_M_LOT_SIZE);
+    const lotsLabel = lots === 0 ? '0 lot' : (lots === 1 ? '1 lot' : lots + ' lots');
+    const remainder = (buses.stockM || 0) - (lots * STOCK_M_LOT_SIZE);
+    const totalBuses = (buses.repro || 0) + (buses.stockF || 0) + (buses.stockM || 0);
+
+    panel.innerHTML = `
+      <div class="panel">
+        ${panelHeaderHtml(acc)}
+
+        <div class="buses-grid">
+          <div class="buse-card">
+            <div class="buse-label">Repro</div>
+            <input type="number" min="0" step="1" class="buse-input" id="buseRepro" value="${buses.repro || 0}" inputmode="numeric">
+          </div>
+          <div class="buse-card">
+            <div class="buse-label">Stock F</div>
+            <input type="number" min="0" step="1" class="buse-input" id="buseStockF" value="${buses.stockF || 0}" inputmode="numeric">
+          </div>
+          <div class="buse-card">
+            <div class="buse-label">Stock M</div>
+            <input type="number" min="0" step="1" class="buse-input" id="buseStockM" value="${buses.stockM || 0}" inputmode="numeric">
+            <div class="buse-extra">
+              = <span class="buse-lots" id="buseLots">${lotsLabel}</span>${remainder > 0 ? ` <span style="color: var(--text-light);">+ ${remainder}</span>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="buses-goal-card status-${busesGoalStatus(sd).status}">
+          <div class="buses-goal-header">
+            <span class="buses-goal-label">
+              ${busesGoalStatus(sd).status === 'reached' ? '✅ Objectif Repro atteint' :
+                busesGoalStatus(sd).status === 'almost' ? '◐ Objectif Repro presque atteint' :
+                '🎯 Objectif Repro'}
+              sur ${escapeHtml(SERVER_LABELS[state.activeServer])}
+            </span>
+            <span class="buses-goal-value">
+              <strong>${busesGoalStatus(sd).total}</strong> / ${BUSES_GOAL_TOTAL}
+            </span>
+          </div>
+          <div class="buses-goal-progress">
+            <div class="buses-goal-progress-fill" style="width: ${busesGoalStatus(sd).percent}%"></div>
+          </div>
+          <div class="buses-goal-hint">
+            ${busesGoalStatus(sd).status === 'reached'
+              ? "Tu as atteint l'objectif des " + BUSES_GOAL_TOTAL + ' buses Repro !'
+              : busesGoalStatus(sd).status === 'almost'
+                ? 'Tu y es presque ! Il te manque ' + (BUSES_GOAL_TOTAL - busesGoalStatus(sd).total) + ' Repro.'
+                : 'Il te manque ' + (BUSES_GOAL_TOTAL - busesGoalStatus(sd).total) + ' Repro pour atteindre l\'objectif.'}
+          </div>
+        </div>
+
+        <div class="buses-summary">
+          📊 Total buses sur ${escapeHtml(acc.name)} / ${escapeHtml(SERVER_LABELS[state.activeServer])} : <strong>${totalBuses}</strong>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('renameBtn').onclick = () => promptRenameAccount(acc);
+    document.getElementById('deleteAccBtn').onclick = () => confirmDeleteAccount(acc);
+
+    function handleChange(field, input) {
+      input.addEventListener('change', () => {
+        let val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        input.value = val;
+        sd.buses[field] = val;
+        recordChange();
+        renderBusesPanel();
+        // Re-render the tabs because the goal status may have just changed
+        renderAccountTabs();
+        renderServerTabs();
+      });
+      input.addEventListener('focus', () => input.select());
+    }
+    handleChange('repro', document.getElementById('buseRepro'));
+    handleChange('stockF', document.getElementById('buseStockF'));
+    handleChange('stockM', document.getElementById('buseStockM'));
+  }
+
+  // ============================================================
+  // MODALS
+  // ============================================================
+  function showModal(title, defaultValue, onConfirm, confirmLabel) {
+    const c = document.getElementById('modalContainer');
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3>${escapeHtml(title)}</h3>
+          <input type="text" id="modalInput" value="${escapeHtml(defaultValue || '')}">
+          <div class="modal-actions">
+            <button class="btn" id="modalCancel">Annuler</button>
+            <button class="btn primary" id="modalOk">${escapeHtml(confirmLabel || 'OK')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const input = document.getElementById('modalInput');
+    input.focus();
+    input.select();
+    const close = () => { c.innerHTML = ''; };
+    const ok = () => { const v = input.value.trim(); if (v) onConfirm(v); close(); };
+    document.getElementById('modalCancel').onclick = close;
+    document.getElementById('modalOk').onclick = ok;
+    input.onkeydown = (e) => { if (e.key === 'Enter') ok(); if (e.key === 'Escape') close(); };
+  }
+
+  function showConfirm(message, onYes) {
+    const c = document.getElementById('modalContainer');
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3 style="white-space: pre-line;">${escapeHtml(message)}</h3>
+          <div class="modal-actions">
+            <button class="btn" id="modalCancel">Annuler</button>
+            <button class="btn danger" id="modalOk">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = () => { c.innerHTML = ''; };
+    document.getElementById('modalCancel').onclick = close;
+    document.getElementById('modalOk').onclick = () => { onYes(); close(); };
+  }
+
+  function showCustomModal(title, message, buttons) {
+    const c = document.getElementById('modalContainer');
+    const buttonsHtml = buttons.map((b, i) =>
+      `<button class="btn ${b.cls}" data-idx="${i}">${escapeHtml(b.label)}</button>`
+    ).join('');
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(message)}</p>
+          <div class="modal-actions">${buttonsHtml}</div>
+        </div>
+      </div>
+    `;
+    const close = () => { c.innerHTML = ''; };
+    c.querySelectorAll('[data-idx]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.idx);
+        close();
+        if (buttons[idx].action) buttons[idx].action();
+      };
+    });
+  }
+
+  function promptAddAccount() {
+    showModal('Nom du nouveau compte', '', (name) => {
+      const newAcc = makeDefaultAccount(name);
+      state.accounts.push(newAcc);
+      state.activeAccountId = newAcc.id;
+      state.activeServer = 'gaia';
+      recordChange();
+      render();
+    }, 'Ajouter');
+  }
+
+  function promptRenameAccount(acc) {
+    showModal('Renommer le compte', acc.name, (name) => {
+      acc.name = name;
+      recordChange();
+      render();
+    }, 'Renommer');
+  }
+
+  function confirmDeleteAccount(acc) {
+    showConfirm(`Supprimer "${acc.name}" et toutes ses données (Gaïa + Ouranos) ?`, () => {
+      state.accounts = state.accounts.filter(a => a.id !== acc.id);
+      if (state.activeAccountId === acc.id) state.activeAccountId = state.accounts[0]?.id || null;
+      // If we were on the aggregated view but no longer have 2+ accounts, fall back
+      if (state.activeAccountId === ALL_ACCOUNTS_ID && state.accounts.length < 2) {
+        state.activeAccountId = state.accounts[0]?.id || null;
+      }
+      recordChange();
+      render();
+    });
+  }
+
+  // ============================================================
+  // WIRE UP
+  // ============================================================
+  document.getElementById('exportBtn').onclick = exportData;
+  document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+
+  // --- Cloud sync ---
+  document.getElementById('cloudSyncBtn').onclick = () => syncFromCloud('manual');
+  document.getElementById('cloudStatus').onclick = onCloudStatusClick;
+  document.getElementById('cloudViewerToggle').onchange = (e) => {
+    setCloudViewer(e.target.checked);
+    if (e.target.checked) syncFromCloud('auto');
+  };
+  // Rafraîchir quand on revient sur l'onglet (utile sur le téléphone), max 1×/30 s
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastCloudFetchAt > 30000) syncFromCloud('auto');
+  });
+
+  document.getElementById('importFile').onchange = (e) => {
+    if (e.target.files[0]) importData(e.target.files[0]);
+    e.target.value = '';
+  };
+
+  // Theme toggle
+  function updateThemeButton() {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const current = document.documentElement.getAttribute('data-theme');
+    btn.textContent = current === 'dark' ? '☀️' : '🌙';
+    btn.title = current === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre';
+  }
+  document.getElementById('themeToggle').onclick = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('equideow-theme', next); } catch (e) {}
+    updateThemeButton();
+  };
+  updateThemeButton();
+
+  // ============================================================
+  // GLOBAL SEARCH (objects across all accounts)
+  // ============================================================
+  const searchInput = document.getElementById('globalSearch');
+  const searchResults = document.getElementById('globalSearchResults');
+  let searchKbdIndex = -1;
+
+  function normaliseForSearch(s) {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''); // strip accents
+  }
+
+  function buildSearchResults(query) {
+    const q = normaliseForSearch(query.trim());
+    if (!q) return [];
+
+    // Find matching catalog items, sorted by relevance
+    const matches = state.itemCatalog
+      .map(item => {
+        const n = normaliseForSearch(item.name);
+        if (!n.includes(q)) return null;
+        // Score: exact start = 0 (best), word-start = 1, anywhere = 2
+        let score = 2;
+        if (n.startsWith(q)) score = 0;
+        else if (n.split(/\s+/).some(w => w.startsWith(q))) score = 1;
+        return { item, score };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.score - b.score || a.item.name.localeCompare(b.item.name, 'fr'))
+      .slice(0, 8); // cap result count
+
+    // For each match, find all (account, server) pairs that hold > 0
+    return matches.map(({ item }) => {
+      const locations = [];
+      let total = 0;
+      state.accounts.forEach(a => {
+        SERVERS.forEach(s => {
+          const qty = getQty(a.servers[s], item.id);
+          if (qty > 0) {
+            locations.push({ accountId: a.id, accountName: a.name, server: s, qty });
+            total += qty;
+          }
+        });
+      });
+      // Sort: by quantity desc, then account name
+      locations.sort((x, y) => y.qty - x.qty || x.accountName.localeCompare(y.accountName, 'fr'));
+      return { item, locations, total };
+    });
+  }
+
+  function renderSearchResults() {
+    const query = searchInput.value;
+    if (!query.trim()) {
+      searchResults.hidden = true;
+      searchResults.innerHTML = '';
+      searchKbdIndex = -1;
+      return;
+    }
+    const results = buildSearchResults(query);
+    if (results.length === 0) {
+      searchResults.innerHTML = '<div class="global-search-empty">Aucun objet trouvé pour cette recherche.</div>';
+      searchResults.hidden = false;
+      searchKbdIndex = -1;
+      return;
+    }
+
+    searchResults.innerHTML = results.map((r, gi) => {
+      const imgUrl = r.item.imageUrl || imageUrlForSlug(r.item.slug);
+      const imgHtml = imgUrl
+        ? `<img src="${escapeHtml(imgUrl)}" alt="" onerror="this.style.display='none'">`
+        : '';
+      const locsHtml = r.locations.length === 0
+        ? `<div class="gsr-location" style="cursor: default; color: var(--text-muted); font-style: italic;">Aucun stock — clique pour ouvrir l'inventaire</div>`
+        : r.locations.map(l => `
+            <div class="gsr-location" data-account-id="${l.accountId}" data-server="${l.server}">
+              <span class="account-name">${escapeHtml(l.accountName)}</span>
+              <span class="server-badge">${escapeHtml(SERVER_LABELS[l.server])}</span>
+              <span class="qty">${l.qty}</span>
+            </div>
+          `).join('');
+      const headerLocation = r.locations.length === 0
+        ? `<div class="gsr-location" data-account-id="${state.accounts[0]?.id || ''}" data-server="${state.activeServer}" style="display:none;"></div>`
+        : '';
+      return `
+        <div class="gsr-item-group">
+          <div class="gsr-item-header">
+            ${imgHtml}
+            <span class="name">${escapeHtml(r.item.name)}</span>
+            <span class="total">${r.total > 0 ? '∑ ' + r.total : 'aucun stock'}</span>
+          </div>
+          <div class="gsr-locations">${locsHtml}${headerLocation}</div>
+        </div>
+      `;
+    }).join('');
+    searchResults.hidden = false;
+    searchKbdIndex = -1;
+    wireSearchResultClicks();
+  }
+
+  function wireSearchResultClicks() {
+    searchResults.querySelectorAll('.gsr-location[data-account-id]').forEach(el => {
+      const id = el.getAttribute('data-account-id');
+      const server = el.getAttribute('data-server');
+      if (!id) return;
+      el.onclick = () => goToAccountInventory(id, server);
+    });
+  }
+
+  function goToAccountInventory(accountId, server) {
+    state.activeAccountId = accountId;
+    if (server && SERVERS.includes(server)) state.activeServer = server;
+    state.currentView = 'inventory';
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    saveState();
+    closeSearch();
+    render();
+  }
+
+  function closeSearch() {
+    searchResults.hidden = true;
+    searchInput.value = '';
+    searchKbdIndex = -1;
+  }
+
+  function getSearchSelectableItems() {
+    return Array.from(searchResults.querySelectorAll('.gsr-location[data-account-id]'));
+  }
+
+  function moveSearchKbd(delta) {
+    const items = getSearchSelectableItems();
+    if (items.length === 0) return;
+    items.forEach(i => i.classList.remove('kbd-active'));
+    searchKbdIndex = (searchKbdIndex + delta + items.length) % items.length;
+    items[searchKbdIndex].classList.add('kbd-active');
+    items[searchKbdIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  searchInput.addEventListener('input', renderSearchResults);
+  searchInput.addEventListener('focus', () => { if (searchInput.value) renderSearchResults(); });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSearch(); searchInput.blur(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); moveSearchKbd(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSearchKbd(-1); }
+    else if (e.key === 'Enter') {
+      const items = getSearchSelectableItems();
+      const target = (searchKbdIndex >= 0 ? items[searchKbdIndex] : items[0]);
+      if (target) target.click();
+    }
+  });
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!searchResults.hidden &&
+        !searchInput.contains(e.target) &&
+        !searchResults.contains(e.target)) {
+      searchResults.hidden = true;
+    }
+  });
+
+  // ============================================================
+  // KEYBOARD SHORTCUTS
+  // ============================================================
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const MOD_LABEL = isMac ? '⌘' : 'Ctrl';
+
+  // Reflect the right shortcut in the search placeholder
+  searchInput.placeholder = `🔍 Rechercher un objet sur tous les comptes (${MOD_LABEL}+K)…`;
+
+  function isTyping(target) {
+    if (!target) return false;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+           target.isContentEditable;
+  }
+
+  function cycleAccount(delta) {
+    const sorted = state.accounts.slice().sort((a, b) =>
+      a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+    );
+    if (sorted.length === 0) return;
+    // Handle "all accounts" view by treating it as a position after the last real account
+    let currentIdx;
+    if (isAllAccountsView()) {
+      currentIdx = sorted.length;
+    } else {
+      currentIdx = sorted.findIndex(a => a.id === state.activeAccountId);
+      if (currentIdx < 0) currentIdx = 0;
+    }
+    const allOptions = sorted.map(a => a.id);
+    if (sorted.length >= 2) allOptions.push(ALL_ACCOUNTS_ID); // include the aggregated view
+    const nextIdx = (currentIdx + delta + allOptions.length) % allOptions.length;
+    const nextId = allOptions[nextIdx];
+    state.activeAccountId = nextId;
+    if (nextId === ALL_ACCOUNTS_ID) state.currentView = 'inventory';
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    saveState();
+    render();
+  }
+
+  function switchToServer(server) {
+    if (isAllAccountsView() || !getActiveAccount()) {
+      // For aggregated view we still allow server switch
+      state.activeServer = server;
+      inventorySortSnapshot = null;
+      snapshotForKey = null;
+      saveState();
+      render();
+      return;
+    }
+    state.activeServer = server;
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    saveState();
+    render();
+  }
+
+  function switchToView(view) {
+    if (isAllAccountsView() && view !== 'inventory') return; // not allowed
+    state.currentView = view;
+    inventorySortSnapshot = null;
+    snapshotForKey = null;
+    saveState();
+    render();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + K → focus global search (works anywhere)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+      return;
+    }
+    // Ctrl/Cmd + Left/Right → cycle accounts
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      if (isTyping(e.target)) return; // never steal focus from inputs
+      e.preventDefault();
+      cycleAccount(e.key === 'ArrowRight' ? 1 : -1);
+      return;
+    }
+    // The remaining shortcuts must NOT fire while typing in inputs
+    if (isTyping(e.target)) return;
+    // No modifier keys for single-letter shortcuts
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (e.key === '?') { e.preventDefault(); showHelpModal(); return; }
+    if (e.key === 'g' || e.key === 'G') { e.preventDefault(); switchToServer('gaia'); return; }
+    if (e.key === 'o' || e.key === 'O') { e.preventDefault(); switchToServer('ouranos'); return; }
+    if (e.key === 't' || e.key === 'T') { e.preventDefault(); switchToView('tasks'); return; }
+    if (e.key === 'i' || e.key === 'I') { e.preventDefault(); switchToView('inventory'); return; }
+    if (e.key === 'b' || e.key === 'B') { e.preventDefault(); switchToView('buses'); return; }
+    if (e.key === '/') {
+      // Focus current inventory search if visible, otherwise the global one
+      const invSearch = document.getElementById('invSearch');
+      if (invSearch) {
+        e.preventDefault();
+        invSearch.focus();
+      } else {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    }
+  });
+
+  function showHelpModal() {
+    const c = document.getElementById('modalContainer');
+    c.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal" style="width: 480px; max-width: 95vw;">
+          <h3>⌨ Raccourcis clavier</h3>
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tbody>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Recherche globale</td><td style="padding: 6px 8px; text-align: right;"><kbd>${MOD_LABEL}</kbd> + <kbd>K</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Compte précédent / suivant</td><td style="padding: 6px 8px; text-align: right;"><kbd>${MOD_LABEL}</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Aller sur Gaïa</td><td style="padding: 6px 8px; text-align: right;"><kbd>G</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Aller sur Ouranos</td><td style="padding: 6px 8px; text-align: right;"><kbd>O</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Onglet Tâches</td><td style="padding: 6px 8px; text-align: right;"><kbd>T</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Onglet Inventaire</td><td style="padding: 6px 8px; text-align: right;"><kbd>I</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Onglet Buses</td><td style="padding: 6px 8px; text-align: right;"><kbd>B</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Recherche dans l'inventaire</td><td style="padding: 6px 8px; text-align: right;"><kbd>/</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Fermer une fenêtre</td><td style="padding: 6px 8px; text-align: right;"><kbd>Échap</kbd></td></tr>
+              <tr><td style="padding: 6px 8px; color: var(--text-muted);">Afficher cette aide</td><td style="padding: 6px 8px; text-align: right;"><kbd>?</kbd></td></tr>
+            </tbody>
+          </table>
+          <p style="font-size: 12px; color: var(--text-light); margin-top: 12px; font-style: italic;">Les raccourcis à une lettre (G, O, T, I, B, /, ?) ne fonctionnent que quand tu n'es pas en train de taper dans un champ.</p>
+          <div class="modal-actions">
+            <button class="btn primary" id="modalOk">Fermer</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = () => { c.innerHTML = ''; };
+    document.getElementById('modalOk').onclick = close;
+  }
+
+  document.getElementById('helpBtn').onclick = showHelpModal;
+
+  load();
+})();
+</script>
+</body>
+</html>
