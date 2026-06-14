@@ -1109,6 +1109,11 @@
     min-width: 60px; text-align: center;
     color: var(--text-title);
     font-family: var(--font-title);
+    height: 38px; line-height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    font-style: normal;
+    font-variant-numeric: lining-nums tabular-nums;
   }
   .exchanges-value.maxed { color: var(--danger); }
   .exchanges-value.empty { color: var(--text-muted); }
@@ -1365,7 +1370,7 @@
   }
 
   function makeDefaultExchanges() {
-    return { count: 0, lastResetWeekKey: getCurrentWeekKey() };
+    return { count: 0, lastResetWeekKey: getCurrentWeekKey(), updatedAt: null };
   }
 
   function makeDefaultServerData() {
@@ -3146,6 +3151,7 @@
     const newCount = Math.max(0, sd.exchanges.count + delta); // pas de plafond
     if (newCount === sd.exchanges.count) return;
     sd.exchanges.count = newCount;
+    sd.exchanges.updatedAt = new Date().toISOString(); // pour la fusion « le plus récent gagne »
     recordChange();
     updateExchangesUI();
   }
