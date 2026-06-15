@@ -264,6 +264,7 @@
   .status-icon.danger { box-shadow: inset 0 0 0 2px var(--danger); }
   .status-icon.new    { box-shadow: inset 0 0 0 2px var(--gold); cursor: pointer; }
   .status-icon.off    { opacity: 0.5; }
+  #cloudStatus { cursor: pointer; }
   .status-sync { flex: 0 0 auto; width: 28px; }
   .status-auto {
     font-size: 11px; color: var(--text-muted);
@@ -1103,7 +1104,7 @@
     font-size: 11px; color: var(--text-muted); margin-left: 6px;
     font-style: italic;
   }
-  .exchanges-controls { display: flex; align-items: center; gap: 8px; }
+  .exchanges-controls { display: flex; align-items: center; gap: 8px; height: 38px; }
   .exchanges-value {
     font-size: 24px; font-weight: 700;
     min-width: 60px; text-align: center;
@@ -1827,7 +1828,7 @@
     if (!el) return;
     el.textContent = '☁';
     el.className = 'status-icon ' + (cls || 'off');
-    el.title = 'Cloud : ' + String(text || '').replace(/^☁\s*/, '');
+    el.title = 'Cloud : ' + String(text || '').replace(/^☁\s*/, '') + ' — clic pour charger depuis le cloud';
     el.dataset.action = action || '';
   }
 
@@ -1863,32 +1864,34 @@
 
       const when = relativeFromIso(cloud.updatedAt);
 
+      if (mode === 'manual') {
+        // Pull explicite : le Gist est la source de vérité fusionnée (modifs manuelles + scraping).
+        // On charge toujours ; on ne confirme que si le local paraît plus récent (modifs peut-être pas encore synchronisées).
+        if (rel === 'older' && stateHasContent(state) &&
+            !confirm('Tes données locales semblent plus récentes que le cloud (modifs peut-être pas encore envoyées). Charger quand même la version du cloud ? Le local sera remplacé.')) {
+          setCloudStatus('☁ Local plus récent · recharger', 'new', 'load');
+          return;
+        }
+        applyCloud(cloud);
+        setCloudStatus('☁ Chargé' + (when ? ' · ' + when : ''), 'ok');
+        return;
+      }
+
+      // mode auto
       if (rel === 'newer') {
-        if (isCloudViewer() || mode === 'manual') {
-          // Appareil afficheur, ou clic manuel : on applique (avec garde-fou si on écrase des données locales)
-          if (mode === 'manual' && stateHasContent(state) &&
-              !confirm('Charger les données du cloud sur cet appareil ? Tes données locales seront remplacées.')) {
-            setCloudStatus('☁ Cloud plus récent · charger', 'new', 'load');
-            return;
-          }
+        if (isCloudViewer()) {
+          // Appareil afficheur (téléphone) : on applique en silence
           applyCloud(cloud);
           setCloudStatus('☁ À jour' + (when ? ' · ' + when : ''), 'ok');
         } else {
-          // Appareil éditeur (PC) : on n'écrase jamais en silence, on propose
+          // Appareil éditeur (PC) : on n'écrase jamais en auto, on propose (clic = pull manuel)
           setCloudStatus('☁ Cloud plus récent' + (when ? ' (' + when + ')' : '') + ' · charger', 'new', 'load');
         }
       } else if (rel === 'unknown') {
-        if (mode === 'manual' &&
-            confirm('Le cloud diffère de tes données locales mais aucun horodatage ne permet de trancher. Charger le cloud (remplace le local) ?')) {
-          applyCloud(cloud);
-          setCloudStatus('☁ Chargé depuis le cloud', 'ok');
-        } else {
-          setCloudStatus('☁ Cloud différent · charger ?', 'new', 'load');
-        }
+        setCloudStatus('☁ Cloud différent · charger ?', 'new', 'load');
       } else {
-        // older / equal
-        setCloudStatus('☁ Local à jour', 'ok');
-        if (mode === 'manual') alert('Le cloud n\'est pas plus récent que tes données locales — rien à charger.');
+        // older / equal : le local est à jour, mais un clic sur la pastille forcera quand même un pull
+        setCloudStatus('☁ À jour' + (when ? ' · ' + when : ''), 'ok');
       }
     } catch (err) {
       setCloudStatus('☁ Hors ligne', 'off');
@@ -1899,13 +1902,8 @@
   }
 
   function onCloudStatusClick() {
-    const el = document.getElementById('cloudStatus');
-    if (!el || el.dataset.action !== 'load' || !lastCloud) return;
-    if (!stateHasContent(state) ||
-        confirm('Charger les données du cloud sur cet appareil ? Tes données locales seront remplacées.')) {
-      applyCloud(lastCloud);
-      setCloudStatus('☁ À jour' + (lastCloud.updatedAt ? ' · ' + relativeFromIso(lastCloud.updatedAt) : ''), 'ok');
-    }
+    // Un clic sur la pastille = pull manuel, toujours (même si le local paraît à jour).
+    syncFromCloud('manual');
   }
 
   function load() {
