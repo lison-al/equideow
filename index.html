@@ -1011,6 +1011,28 @@
     color: var(--gold);
     font-family: var(--font-title);
   }
+  .buses-config {
+    margin-top: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .buses-config-title {
+    font-family: var(--font-subtitle, var(--font-title));
+    font-size: 15px; color: var(--text-title);
+    margin-bottom: 8px;
+  }
+  .buses-config-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; }
+  .buses-config-list { display: flex; flex-direction: column; gap: 6px; }
+  .buses-config-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 8px; border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .buses-config-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .buses-config-select { flex: 0 0 auto; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font-size: 13px; cursor: pointer; }
   .buses-summary {
     background: var(--accent-bg);
     color: var(--text-title);
@@ -1369,6 +1391,10 @@
     return { repro: 0, stockF: 0, stockM: 0 };
   }
 
+  function makeDefaultBusStables() {
+    return { repro: [], stockF: [], stockM: [] };
+  }
+
   function makeDefaultExchanges() {
     return { count: 0, lastResetWeekKey: getCurrentWeekKey(), updatedAt: null };
   }
@@ -1378,10 +1404,31 @@
       tasks: [],
       quantities: {},
       buses: makeDefaultBuses(),
+      busStables: makeDefaultBusStables(),  // { repro:[ids], stockF:[ids], stockM:[ids] } — étiquetage manuel
+      elevages: [],                          // [{id, name}] — liste découverte par le scraping
+      busesUpdatedAt: null,                  // ISO : dernière maj des comptes buses (fusion « le plus récent gagne »)
       exchanges: makeDefaultExchanges(),
       busesGoalReached: false,
       inventoryUpdatedAt: null  // ISO timestamp of last inventory change
     };
+  }
+
+  // Garantit que toutes les clés attendues existent sur un objet serveur (migration douce).
+  function ensureServerData(sd) {
+    if (!sd.tasks) sd.tasks = [];
+    if (!sd.quantities) sd.quantities = {};
+    if (!sd.buses) sd.buses = makeDefaultBuses();
+    if (!sd.busStables) sd.busStables = makeDefaultBusStables();
+    else {
+      if (!Array.isArray(sd.busStables.repro)) sd.busStables.repro = [];
+      if (!Array.isArray(sd.busStables.stockF)) sd.busStables.stockF = [];
+      if (!Array.isArray(sd.busStables.stockM)) sd.busStables.stockM = [];
+    }
+    if (!Array.isArray(sd.elevages)) sd.elevages = [];
+    if (!('busesUpdatedAt' in sd)) sd.busesUpdatedAt = null;
+    if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
+    if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
+    if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
   }
 
   function makeDefaultAccount(name) {
@@ -1393,6 +1440,26 @@
         ouranos: makeDefaultServerData()
       }
     };
+  }
+
+  // Catégorie actuelle d'un élevage selon l'étiquetage ('repro'|'stockF'|'stockM'|'ignore').
+  function currentCatOf(busStables, id) {
+    const sid = String(id);
+    if ((busStables.repro || []).map(String).includes(sid)) return 'repro';
+    if ((busStables.stockF || []).map(String).includes(sid)) return 'stockF';
+    if ((busStables.stockM || []).map(String).includes(sid)) return 'stockM';
+    return 'ignore';
+  }
+  // Range un élevage dans une catégorie (et l'enlève des autres).
+  function setElevageCat(busStables, id, cat) {
+    const sid = String(id);
+    ['repro', 'stockF', 'stockM'].forEach(c => {
+      busStables[c] = (busStables[c] || []).filter(x => String(x) !== sid);
+    });
+    if (cat !== 'ignore') {
+      if (!busStables[cat]) busStables[cat] = [];
+      busStables[cat].push(sid);
+    }
   }
 
   function getCurrentWeekKey() {
@@ -1759,12 +1826,7 @@
       SERVERS.forEach(s => {
         if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
         const sd = acc.servers[s];
-        if (!sd.tasks) sd.tasks = [];
-        if (!sd.quantities) sd.quantities = {};
-        if (!sd.buses) sd.buses = makeDefaultBuses();
-        if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
-        if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
-        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+        ensureServerData(sd);
       });
     });
     if (!imported.currentView) imported.currentView = 'tasks';
@@ -1991,12 +2053,7 @@
       SERVERS.forEach(s => {
         if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
         const sd = acc.servers[s];
-        if (!sd.tasks) sd.tasks = [];
-        if (!sd.quantities) sd.quantities = {};
-        if (!sd.buses) sd.buses = makeDefaultBuses();
-        if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
-        if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
-        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+        ensureServerData(sd);
       });
     });
     if (!state.currentView) state.currentView = 'tasks';
@@ -2191,12 +2248,7 @@
           SERVERS.forEach(s => {
             if (!acc.servers[s]) acc.servers[s] = makeDefaultServerData();
             const sd = acc.servers[s];
-            if (!sd.tasks) sd.tasks = [];
-            if (!sd.quantities) sd.quantities = {};
-            if (!sd.buses) sd.buses = makeDefaultBuses();
-            if (!sd.exchanges) sd.exchanges = makeDefaultExchanges();
-            if (typeof sd.busesGoalReached !== 'boolean') sd.busesGoalReached = false;
-        if (!('inventoryUpdatedAt' in sd)) sd.inventoryUpdatedAt = null;
+            ensureServerData(sd);
           });
         });
         if (!imported.currentView) imported.currentView = 'tasks';
@@ -3764,6 +3816,27 @@
         <div class="buses-summary">
           📊 Total buses sur ${escapeHtml(acc.name)} / ${escapeHtml(SERVER_LABELS[state.activeServer])} : <strong>${totalBuses}</strong>
         </div>
+
+        <div class="buses-config">
+          <div class="buses-config-title">🏷️ Élevages → catégorie</div>
+          ${sd.elevages.length === 0
+            ? `<div class="buses-config-hint">Lance une synchro depuis le jeu pour récupérer la liste de tes élevages. Tu pourras ensuite étiqueter chacun (Repro / Stock F / Stock M) et les compteurs ci-dessus se rempliront automatiquement à la synchro suivante.</div>`
+            : `<div class="buses-config-hint">Étiquette chaque élevage. Les compteurs Repro / Stock F / Stock M se mettent à jour automatiquement à la prochaine synchro (une fois par jour, ou via « Forcer une synchro »).</div>
+               <div class="buses-config-list">
+                 ${sd.elevages.map(el => {
+                   const cat = currentCatOf(sd.busStables, el.id);
+                   return `<div class="buses-config-row">
+                     <span class="buses-config-name" title="${el.id === '__none__' ? 'Chevaux sans élevage' : 'ID ' + escapeHtml(String(el.id))}">${escapeHtml(el.name)}</span>
+                     <select class="buses-config-select" data-elevage="${escapeHtml(String(el.id))}">
+                       <option value="ignore"${cat === 'ignore' ? ' selected' : ''}>— ignorer —</option>
+                       <option value="repro"${cat === 'repro' ? ' selected' : ''}>Repro</option>
+                       <option value="stockF"${cat === 'stockF' ? ' selected' : ''}>Stock F</option>
+                       <option value="stockM"${cat === 'stockM' ? ' selected' : ''}>Stock M</option>
+                     </select>
+                   </div>`;
+                 }).join('')}
+               </div>`}
+        </div>
       </div>
     `;
 
@@ -3776,6 +3849,7 @@
         if (isNaN(val) || val < 0) val = 0;
         input.value = val;
         sd.buses[field] = val;
+        sd.busesUpdatedAt = new Date().toISOString();
         recordChange();
         renderBusesPanel();
         // Re-render the tabs because the goal status may have just changed
@@ -3787,6 +3861,14 @@
     handleChange('repro', document.getElementById('buseRepro'));
     handleChange('stockF', document.getElementById('buseStockF'));
     handleChange('stockM', document.getElementById('buseStockM'));
+
+    panel.querySelectorAll('.buses-config-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const id = sel.getAttribute('data-elevage');
+        setElevageCat(sd.busStables, id, sel.value);
+        recordChange();
+      });
+    });
   }
 
   // ============================================================
