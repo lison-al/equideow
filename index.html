@@ -1495,6 +1495,18 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
+  // Ajoute n mois à une date "AAAA-MM-JJ" en gérant les fins de mois (31 jan +1 → 28/29 fév).
+  function addMonths(dateStr, n) {
+    const parts = String(dateStr).split('-').map(Number);
+    const y = parts[0], m = parts[1], d = parts[2];
+    const targetIndex = (m - 1) + n;
+    const ty = y + Math.floor(targetIndex / 12);
+    const tm = ((targetIndex % 12) + 12) % 12; // 0-11
+    const daysInMonth = new Date(ty, tm + 1, 0).getDate();
+    const td = Math.min(d, daysInMonth);
+    return ty + '-' + String(tm + 1).padStart(2, '0') + '-' + String(td).padStart(2, '0');
+  }
+
   function formatDate(s) {
     const [y,m,d] = s.split('-');
     return d + '/' + m;
@@ -2286,6 +2298,10 @@
             const diffDays = Math.floor((now - completedDate) / (1000*60*60*24));
             if (diffDays >= 7) { t.done = false; changed = true; }
           }
+          if (t.recurring === 'monthly' && t.done && t.date && t.date <= today) {
+            // La date reprogrammée est arrivée → la tâche redevient à faire (rappel réactivé)
+            t.done = false; changed = true;
+          }
         });
       });
     });
@@ -2635,6 +2651,7 @@
             <option value="">Ponctuelle</option>
             <option value="daily">Quotidienne</option>
             <option value="weekly">Hebdomadaire</option>
+            <option value="monthly">Mensuelle</option>
           </select>
           <button class="btn primary" id="addTaskBtn">Ajouter</button>
         </div>
@@ -2690,7 +2707,7 @@
         <div class="task-text ${t.done ? 'done' : ''}">${escapeHtml(t.text)}</div>
         <div class="task-meta">
           ${badge ? `<span class="badge badge-date ${badge.cls}">${badge.label}</span>` : ''}
-          ${t.recurring ? `<span class="badge badge-recurring">${t.recurring === 'daily' ? 'Quotidien' : 'Hebdo'}</span>` : ''}
+          ${t.recurring ? `<span class="badge badge-recurring">${({ daily: 'Quotidien', weekly: 'Hebdo', monthly: 'Mensuel' })[t.recurring] || t.recurring}</span>` : ''}
           <button class="delete-task" data-del="${t.id}" aria-label="Supprimer">×</button>
         </div>
       `;
@@ -2725,8 +2742,16 @@
     const sd = getActiveServerData();
     const t = sd.tasks.find(x => x.id === id);
     if (!t) return;
-    t.done = checked;
-    t.completedAt = checked ? todayStr() : null;
+    if (checked && t.recurring === 'monthly' && t.date) {
+      // Tâche mensuelle : cocher « fait » reprogramme le rappel un mois après aujourd'hui
+      // (la date de complétion), pas après la date prévue. Reste cochée jusqu'à cette nouvelle date.
+      t.date = addMonths(todayStr(), 1);
+      t.done = true;
+      t.completedAt = todayStr();
+    } else {
+      t.done = checked;
+      t.completedAt = checked ? todayStr() : null;
+    }
     recordChange();
     renderPanel();
     renderAccountTabs();
